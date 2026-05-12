@@ -159,7 +159,7 @@ export function KanbanPage() {
     <main className="relative min-h-screen overflow-hidden px-6 py-8 text-slate-100 md:px-8 lg:px-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.14),_transparent_38%),radial-gradient(circle_at_75%_20%,_rgba(192,132,252,0.12),_transparent_30%)]" />
 
-      <div className="relative mx-auto flex max-w-7xl flex-col gap-6">
+      <div className="relative mx-auto flex w-full max-w-none flex-col gap-6">
         <section className="rounded-[2.4rem] border border-white/10 bg-slate-950/55 p-7 shadow-[0_30px_90px_rgba(2,6,23,0.45)] backdrop-blur-2xl md:p-9">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
