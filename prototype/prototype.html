@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<!-- saved from url=(0073)file:///Users/william/Downloads/contributor-kanban/pr-status-board-3.html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR Status Board</title>
+<style>
+  :root {
+    --bg: #f6f9fc;
+    --surface: #ffffff;
+    --fg: #061b31;
+    --muted: #64748d;
+    --label: #273951;
+    --border: #e5edf5;
+    --accent: #533afd;
+    --accent-hover: #4434d4;
+    --brand-dark: #1c1e54;
+    --success: #15be53;
+    --success-text: #108c3d;
+    --success-bg: rgba(21,190,83,0.12);
+    --success-border: rgba(21,190,83,0.3);
+    --danger: #ea2261;
+    --danger-bg: rgba(234,34,97,0.1);
+    --danger-border: rgba(234,34,97,0.25);
+    --warning: #9b6829;
+    --warning-bg: rgba(155,104,41,0.1);
+    --warning-border: rgba(155,104,41,0.25);
+    --purple-light: #f0eeff;
+    --purple-border: #d6d9fc;
+    --shadow-blue: rgba(50,50,93,0.25);
+    --shadow-black: rgba(0,0,0,0.08);
+    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+    --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    font-feature-settings: "ss01";
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--fg);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+  }
+
+  .header-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .repo-name {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--fg);
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .repo-name svg { color: var(--muted); flex-shrink: 0; }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-inline-start: auto;
+  }
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .control-label {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .seg button {
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 400;
+    padding: 5px 12px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .seg button:not(:last-child) {
+    border-inline-end: 1px solid var(--border);
+  }
+
+  .seg button:hover { background: var(--bg); color: var(--label); }
+  .seg button.active { background: var(--accent); color: #fff; }
+  .seg button.active:hover { background: var(--accent-hover); }
+
+  .refresh-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .refresh-btn {
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 400;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--accent);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .refresh-btn:hover {
+    background: var(--purple-light);
+    border-color: var(--purple-border);
+  }
+
+  .refresh-btn.loading svg {
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .board {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px 24px 40px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    min-height: calc(100vh - 80px);
+  }
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .column-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  .column-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .column-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--label);
+    letter-spacing: 0.01em;
+  }
+
+  .column-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0 6px;
+    line-height: 20px;
+  }
+
+  .column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .col-draft .column-dot { background: var(--muted); }
+  .col-blocked .column-dot { background: var(--danger); }
+  .col-changes .column-dot { background: var(--warning); }
+  .col-progress .column-dot { background: var(--accent); }
+  .col-ready .column-dot { background: var(--success); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    cursor: default;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-blue) 0 6px 16px -8px, var(--shadow-black) 0 4px 8px -4px;
+    border-color: var(--purple-border);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .pr-number {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--purple-light);
+    border: 1px solid var(--purple-border);
+    border-radius: 10px;
+    padding: 1px 8px;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+
+  .author {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--muted);
+    min-width: 0;
+  }
+
+  .author-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .author-badge {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 1px 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .badge-internal {
+    color: var(--accent);
+    background: var(--purple-light);
+  }
+
+  .badge-external {
+    color: var(--warning);
+    background: var(--warning-bg);
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--fg);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .card-status {
+    font-size: 11px;
+    font-weight: 400;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  .status-draft { color: var(--muted); background: var(--bg); border: 1px solid var(--border); }
+  .status-ci-fail { color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger-border); }
+  .status-conflict { color: var(--danger); background: var(--danger-bg); border: 1px solid var(--danger-border); }
+  .status-changes { color: #8b5e20; background: var(--warning-bg); border: 1px solid var(--warning-border); }
+  .status-review { color: var(--accent); background: var(--purple-light); border: 1px solid var(--purple-border); }
+  .status-approved { color: var(--success-text); background: var(--success-bg); border: 1px solid var(--success-border); }
+
+  .card-meta {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .card-meta svg { flex-shrink: 0; opacity: 0.6; }
+
+  .empty-col {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    color: var(--muted);
+    font-size: 12px;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  @media (max-width: 1200px) {
+    .board {
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .header { padding: 12px 16px; }
+    .header-inner { gap: 10px; }
+    .repo-name { font-size: 16px; width: 100%; }
+    .controls { width: 100%; overflow-x: auto; }
+    .board {
+      grid-template-columns: repeat(5, minmax(260px, 1fr));
+      padding: 12px 16px 32px;
+      gap: 12px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .controls { flex-wrap: nowrap; }
+    .control-label { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="repo-name">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"></path></svg>
+      <span>acme/platform</span>
+    </div>
+    <div class="controls">
+      <div class="control-group">
+        <span class="control-label">贡献者</span>
+        <div class="seg" data-group="contributor">
+          <button class="active" data-value="all">全部</button>
+          <button data-value="internal">内部</button>
+          <button data-value="external">外部</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <span class="control-label">刷新</span>
+        <div class="seg" data-group="interval">
+          <button data-value="15">15m</button>
+          <button class="active" data-value="30">30m</button>
+          <button data-value="60">60m</button>
+        </div>
+      </div>
+      <div class="refresh-info">
+        <span id="refresh-time">刚刚刷新</span>
+        <button class="refresh-btn" id="refresh-btn" title="立即刷新">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5v4h4"></path><path d="M1.82 10a6.5 6.5 0 1 0 1.18-5L1.5 5.5"></path></svg>
+          刷新
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="board" id="board" data-od-id="kanban-board">
+      <div class="column col-draft">
+        <div class="column-header">
+          <span class="column-dot"></span>
+          <span class="column-title">未开始</span>
+          <span class="column-count">3</span>
+        </div>
+        <div class="column-cards">
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1042</span>
+            <span class="author">
+              <span class="author-name">alice</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">feat: add Stripe Connect onboarding flow for marketplace sellers</div>
+          <div class="card-status status-draft">Draft</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            25 分钟前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1039</span>
+            <span class="author">
+              <span class="author-name">bob</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">refactor: migrate billing module to new subscription API</div>
+          <div class="card-status status-draft">Draft</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            3 小时前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1045</span>
+            <span class="author">
+              <span class="author-name">carol-ext</span>
+              <span class="author-badge badge-external">外部</span>
+            </span>
+          </div>
+          <div class="card-title">docs: update API reference for v3 webhooks</div>
+          <div class="card-status status-draft">Draft</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            2 天前
+          </div>
+        </div>
+      </div>
+      </div>
+    
+      <div class="column col-blocked">
+        <div class="column-header">
+          <span class="column-dot"></span>
+          <span class="column-title">不可合并</span>
+          <span class="column-count">3</span>
+        </div>
+        <div class="column-cards">
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1038</span>
+            <span class="author">
+              <span class="author-name">dave</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">fix: resolve race condition in payment intent confirmation</div>
+          <div class="card-status status-ci-fail">CI 未通过</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            2 小时前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1033</span>
+            <span class="author">
+              <span class="author-name">eve-ext</span>
+              <span class="author-badge badge-external">外部</span>
+            </span>
+          </div>
+          <div class="card-title">feat: implement idempotency keys for retry-safe charge creation</div>
+          <div class="card-status status-conflict">存在代码冲突</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            18 小时前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1029</span>
+            <span class="author">
+              <span class="author-name">frank</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">chore: bump openssl to 3.2.1 for CVE-2024-9143 patch</div>
+          <div class="card-status status-ci-fail">CI 未通过</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            5 小时前
+          </div>
+        </div>
+      </div>
+      </div>
+    
+      <div class="column col-changes">
+        <div class="column-header">
+          <span class="column-dot"></span>
+          <span class="column-title">评审未通过</span>
+          <span class="column-count">2</span>
+        </div>
+        <div class="column-cards">
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1037</span>
+            <span class="author">
+              <span class="author-name">grace-ext</span>
+              <span class="author-badge badge-external">外部</span>
+            </span>
+          </div>
+          <div class="card-title">feat: add multi-currency support for cross-border payouts</div>
+          <div class="card-status status-changes">CHANGE_REQUESTED</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            6 小时前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1031</span>
+            <span class="author">
+              <span class="author-name">heidi</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">fix: correct decimal rounding in JPY zero-decimal currency display</div>
+          <div class="card-status status-changes">CHANGE_REQUESTED</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            1 天前
+          </div>
+        </div>
+      </div>
+      </div>
+    
+      <div class="column col-progress">
+        <div class="column-header">
+          <span class="column-dot"></span>
+          <span class="column-title">处理中</span>
+          <span class="column-count">4</span>
+        </div>
+        <div class="column-cards">
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1041</span>
+            <span class="author">
+              <span class="author-name">ivan</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">feat: webhook signature verification with Ed25519</div>
+          <div class="card-status status-review">处理中</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            45 分钟前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1040</span>
+            <span class="author">
+              <span class="author-name">judy</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">fix: handle expired customer session tokens gracefully in checkout</div>
+          <div class="card-status status-review">处理中</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            1 小时前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1036</span>
+            <span class="author">
+              <span class="author-name">ken-ext</span>
+              <span class="author-badge badge-external">外部</span>
+            </span>
+          </div>
+          <div class="card-title">refactor: extract shared validation logic into @acme/validators package</div>
+          <div class="card-status status-review">处理中</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            8 小时前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1034</span>
+            <span class="author">
+              <span class="author-name">leo</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">feat: add real-time dispute notifications via Server-Sent Events</div>
+          <div class="card-status status-review">处理中</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            12 小时前
+          </div>
+        </div>
+      </div>
+      </div>
+    
+      <div class="column col-ready">
+        <div class="column-header">
+          <span class="column-dot"></span>
+          <span class="column-title">可合并</span>
+          <span class="column-count">3</span>
+        </div>
+        <div class="column-cards">
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1044</span>
+            <span class="author">
+              <span class="author-name">mallory</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">fix: patch XSS vulnerability in merchant dashboard search input</div>
+          <div class="card-status status-approved">评审通过</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            15 分钟前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1043</span>
+            <span class="author">
+              <span class="author-name">nancy-ext</span>
+              <span class="author-badge badge-external">外部</span>
+            </span>
+          </div>
+          <div class="card-title">feat: add tax calculation engine for EU VAT compliance</div>
+          <div class="card-status status-approved">评审通过</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            1 小时前
+          </div>
+        </div>
+      
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#1035</span>
+            <span class="author">
+              <span class="author-name">oscar</span>
+              <span class="author-badge badge-internal">内部</span>
+            </span>
+          </div>
+          <div class="card-title">perf: optimize ledger query with partial index on settlement_date</div>
+          <div class="card-status status-approved">评审通过</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"></path></svg>
+            4 小时前
+          </div>
+        </div>
+      </div>
+      </div>
+    </main>
+
+<script>
+const MOCK_PRS = [
+  { number: 1042, title: "feat: add Stripe Connect onboarding flow for marketplace sellers", author: "alice", internal: true, status: "draft", lastActivity: Date.now() - 25 * 60000 },
+  { number: 1039, title: "refactor: migrate billing module to new subscription API", author: "bob", internal: true, status: "draft", lastActivity: Date.now() - 3 * 3600000 },
+  { number: 1045, title: "docs: update API reference for v3 webhooks", author: "carol-ext", internal: false, status: "draft", lastActivity: Date.now() - 48 * 3600000 },
+
+  { number: 1038, title: "fix: resolve race condition in payment intent confirmation", author: "dave", internal: true, status: "ci-fail", lastActivity: Date.now() - 2 * 3600000 },
+  { number: 1033, title: "feat: implement idempotency keys for retry-safe charge creation", author: "eve-ext", internal: false, status: "conflict", lastActivity: Date.now() - 18 * 3600000 },
+  { number: 1029, title: "chore: bump openssl to 3.2.1 for CVE-2024-9143 patch", author: "frank", internal: true, status: "ci-fail", lastActivity: Date.now() - 5 * 3600000 },
+
+  { number: 1037, title: "feat: add multi-currency support for cross-border payouts", author: "grace-ext", internal: false, status: "changes-requested", lastActivity: Date.now() - 6 * 3600000 },
+  { number: 1031, title: "fix: correct decimal rounding in JPY zero-decimal currency display", author: "heidi", internal: true, status: "changes-requested", lastActivity: Date.now() - 30 * 3600000 },
+
+  { number: 1041, title: "feat: webhook signature verification with Ed25519", author: "ivan", internal: true, status: "in-review", lastActivity: Date.now() - 45 * 60000 },
+  { number: 1040, title: "fix: handle expired customer session tokens gracefully in checkout", author: "judy", internal: true, status: "in-review", lastActivity: Date.now() - 90 * 60000 },
+  { number: 1036, title: "refactor: extract shared validation logic into @acme/validators package", author: "ken-ext", internal: false, status: "in-review", lastActivity: Date.now() - 8 * 3600000 },
+  { number: 1034, title: "feat: add real-time dispute notifications via Server-Sent Events", author: "leo", internal: true, status: "in-review", lastActivity: Date.now() - 12 * 3600000 },
+
+  { number: 1044, title: "fix: patch XSS vulnerability in merchant dashboard search input", author: "mallory", internal: true, status: "approved", lastActivity: Date.now() - 15 * 60000 },
+  { number: 1043, title: "feat: add tax calculation engine for EU VAT compliance", author: "nancy-ext", internal: false, status: "approved", lastActivity: Date.now() - 1 * 3600000 },
+  { number: 1035, title: "perf: optimize ledger query with partial index on settlement_date", author: "oscar", internal: true, status: "approved", lastActivity: Date.now() - 4 * 3600000 },
+];
+
+const STATUS_LABELS = {
+  "draft": "Draft",
+  "ci-fail": "CI 未通过",
+  "conflict": "存在代码冲突",
+  "changes-requested": "CHANGE_REQUESTED",
+  "in-review": "处理中",
+  "approved": "评审通过",
+};
+
+const COLUMNS = [
+  { id: "draft",    key: "draft",              label: "未开始",    cls: "col-draft" },
+  { id: "blocked",  key: "blocked",            label: "不可合并",  cls: "col-blocked" },
+  { id: "changes",  key: "changes-requested",  label: "评审未通过", cls: "col-changes" },
+  { id: "progress", key: "in-review",          label: "处理中",    cls: "col-progress" },
+  { id: "ready",    key: "approved",           label: "可合并",    cls: "col-ready" },
+];
+
+function classifyPR(pr) {
+  if (pr.status === "draft") return "draft";
+  if (pr.status === "ci-fail" || pr.status === "conflict") return "blocked";
+  if (pr.status === "changes-requested") return "changes-requested";
+  if (pr.status === "approved") return "approved";
+  return "in-review";
+}
+
+function statusClass(pr) {
+  switch (pr.status) {
+    case "draft": return "status-draft";
+    case "ci-fail": return "status-ci-fail";
+    case "conflict": return "status-conflict";
+    case "changes-requested": return "status-changes";
+    case "in-review": return "status-review";
+    case "approved": return "status-approved";
+    default: return "status-draft";
+  }
+}
+
+function relativeTime(ts) {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "刚刚";
+  if (mins < 60) return `${mins} 分钟前`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} 小时前`;
+  const days = Math.floor(hours / 24);
+  return `${days} 天前`;
+}
+
+let contributorFilter = "all";
+let refreshInterval = 30;
+let lastRefreshTime = Date.now();
+let refreshTimer = null;
+
+function getFilteredPRs() {
+  return MOCK_PRS.filter(pr => {
+    if (contributorFilter === "internal") return pr.internal;
+    if (contributorFilter === "external") return !pr.internal;
+    return true;
+  });
+}
+
+function renderBoard() {
+  const board = document.getElementById("board");
+  const prs = getFilteredPRs();
+  const buckets = {};
+  COLUMNS.forEach(c => buckets[c.key] = []);
+  prs.forEach(pr => {
+    const key = classifyPR(pr);
+    if (buckets[key]) buckets[key].push(pr);
+  });
+
+  board.innerHTML = COLUMNS.map(col => {
+    const cards = buckets[col.key];
+    const cardsHtml = cards.length
+      ? cards.map(pr => `
+        <div class="card">
+          <div class="card-top">
+            <span class="pr-number">#${pr.number}</span>
+            <span class="author">
+              <span class="author-name">${pr.author}</span>
+              <span class="author-badge ${pr.internal ? 'badge-internal' : 'badge-external'}">${pr.internal ? '内部' : '外部'}</span>
+            </span>
+          </div>
+          <div class="card-title">${pr.title}</div>
+          <div class="card-status ${statusClass(pr)}">${STATUS_LABELS[pr.status]}</div>
+          <div class="card-meta">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z"/></svg>
+            ${relativeTime(pr.lastActivity)}
+          </div>
+        </div>
+      `).join("")
+      : `<div class="empty-col">暂无 PR</div>`;
+
+    return `
+      <div class="column ${col.cls}">
+        <div class="column-header">
+          <span class="column-dot"></span>
+          <span class="column-title">${col.label}</span>
+          <span class="column-count">${cards.length}</span>
+        </div>
+        <div class="column-cards">${cardsHtml}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function updateRefreshTimeDisplay() {
+  document.getElementById("refresh-time").textContent = relativeTime(lastRefreshTime) === "刚刚"
+    ? "刚刚刷新"
+    : relativeTime(lastRefreshTime) + "刷新";
+}
+
+function doRefresh() {
+  const btn = document.getElementById("refresh-btn");
+  btn.classList.add("loading");
+  setTimeout(() => {
+    lastRefreshTime = Date.now();
+    MOCK_PRS.forEach(pr => {
+      pr.lastActivity += Math.floor(Math.random() * 120000);
+      if (pr.lastActivity > Date.now()) pr.lastActivity = Date.now() - 60000;
+    });
+    renderBoard();
+    updateRefreshTimeDisplay();
+    btn.classList.remove("loading");
+  }, 600);
+}
+
+function resetTimer() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(doRefresh, refreshInterval * 60000);
+}
+
+document.querySelectorAll('.seg[data-group="contributor"] button').forEach(btn => {
+  btn.addEventListener("click", () => {
+    btn.parentElement.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    contributorFilter = btn.dataset.value;
+    renderBoard();
+  });
+});
+
+document.querySelectorAll('.seg[data-group="interval"] button').forEach(btn => {
+  btn.addEventListener("click", () => {
+    btn.parentElement.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    refreshInterval = parseInt(btn.dataset.value, 10);
+    resetTimer();
+  });
+});
+
+document.getElementById("refresh-btn").addEventListener("click", doRefresh);
+
+setInterval(() => {
+  renderBoard();
+  updateRefreshTimeDisplay();
+}, 30000);
+
+renderBoard();
+resetTimer();
+</script>
+
+
+</body></html>
