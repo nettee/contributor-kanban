@@ -92,7 +92,7 @@ async function buildCard(client: KanbanClient, listItem: GitHubPullRequestListIt
     comments,
     checkRuns: checkRunsResponse.check_runs,
     statuses,
-    isInternal: membership.isInternal,
+    isInternal: isInternalContributor(listItem, pullRequest, membership.isInternal),
   });
 }
 
@@ -111,6 +111,14 @@ function buildSummaryCard(listItem: GitHubPullRequestListItem): PullRequestCard 
 
 function isInternalAssociation(authorAssociation: string | undefined): boolean {
   return authorAssociation === "MEMBER" || authorAssociation === "OWNER" || authorAssociation === "COLLABORATOR";
+}
+
+function isInternalContributor(
+  listItem: GitHubPullRequestListItem,
+  pullRequest: GitHubPullRequest,
+  isOrgMember: boolean,
+): boolean {
+  return isOrgMember || isInternalAssociation(listItem.author_association) || isInternalAssociation(pullRequest.author_association);
 }
 
 export function buildPullRequestCard(details: PullRequestDetails): PullRequestCard {

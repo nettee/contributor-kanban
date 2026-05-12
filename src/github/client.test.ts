@@ -138,7 +138,7 @@ describe("GitHubRestClient", () => {
     vi.useRealTimers();
   });
 
-  it("returns public org membership and caches membership lookups", async () => {
+  it("returns external membership on 404 and caches membership lookups", async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()
       .mockResolvedValue(new Response(JSON.stringify({ message: "Not Found" }), { status: 404 }));
@@ -148,13 +148,24 @@ describe("GitHubRestClient", () => {
     await expect(client.getMembership("alice")).resolves.toEqual({ login: "alice", isInternal: false });
     await expect(client.getMembership("alice")).resolves.toEqual({ login: "alice", isInternal: false });
     expect(fetchImplementation).toHaveBeenCalledTimes(1);
-    expect(fetchImplementation.mock.calls[0]?.[0]).toContain("/orgs/org/members/alice");
+    expect(fetchImplementation.mock.calls[0]?.[0]).toContain("/orgs/org/memberships/alice");
   });
 
-  it("returns internal membership on 204", async () => {
-    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }));
+  it("returns internal membership for active org memberships", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ state: "active", role: "member", user: { login: "alice" } }), { status: 200 }),
+    );
     const client = createClient(fetchImplementation);
 
     await expect(client.getMembership("alice")).resolves.toEqual({ login: "alice", isInternal: true });
+  });
+
+  it("returns external membership for pending org memberships", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ state: "pending", role: "member", user: { login: "alice" } }), { status: 200 }),
+    );
+    const client = createClient(fetchImplementation);
+
+    await expect(client.getMembership("alice")).resolves.toEqual({ login: "alice", isInternal: false });
   });
 });

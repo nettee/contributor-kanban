@@ -13,6 +13,7 @@ function createClient(): KanbanClient {
         updated_at: "2026-05-12T08:00:00.000Z",
         created_at: "2026-05-12T07:00:00.000Z",
         html_url: "https://github.com/owner/repo/pull/1",
+        author_association: "CONTRIBUTOR",
         user: { login: "alice" },
         head: { sha: "sha-1", ref: "one" },
         base: { ref: "main" },
@@ -25,6 +26,7 @@ function createClient(): KanbanClient {
         updated_at: "2026-05-12T09:00:00.000Z",
         created_at: "2026-05-12T07:00:00.000Z",
         html_url: "https://github.com/owner/repo/pull/2",
+        author_association: "MEMBER",
         user: { login: "bob" },
         head: { sha: "sha-2", ref: "two" },
         base: { ref: "main" },
@@ -38,6 +40,7 @@ function createClient(): KanbanClient {
       updated_at: number === 1 ? "2026-05-12T08:00:00.000Z" : "2026-05-12T09:00:00.000Z",
       created_at: "2026-05-12T07:00:00.000Z",
       html_url: `https://github.com/owner/repo/pull/${number}`,
+      author_association: number === 1 ? "CONTRIBUTOR" : "MEMBER",
       user: { login: number === 1 ? "alice" : "bob" },
       head: { sha: `sha-${number}`, ref: String(number) },
       base: { ref: "main" },
@@ -75,6 +78,10 @@ describe("buildKanbanResponse", () => {
       activityAt: "2026-05-12T11:00:00.000Z",
       detailStatus: "评审通过",
       column: "E",
+    });
+    expect(mergeable?.cards[0]).toMatchObject({
+      number: 2,
+      author: { login: "bob", isInternal: true },
     });
   });
 });

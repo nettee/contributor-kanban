@@ -87,3 +87,9 @@ export type GitHubOrgMembership = {
   login: string;
   isInternal: boolean;
 };
+
+export type GitHubOrgMembershipResponse = {
+  state: string;
+  role: string;
+  user: GitHubUser;
+};

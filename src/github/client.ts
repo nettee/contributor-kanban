@@ -4,6 +4,7 @@ import type {
   GitHubCommit,
   GitHubIssueComment,
   GitHubOrgMembership,
+  GitHubOrgMembershipResponse,
   GitHubPullRequest,
   GitHubPullRequestListItem,
   GitHubRateLimit,
@@ -123,15 +124,11 @@ export class GitHubRestClient {
   }
 
   private async requestMembership(username: string): Promise<GitHubOrgMembership> {
-    return { login: username, isInternal: await this.isPublicOrgMember(username) };
+    return { login: username, isInternal: await this.isOrgMember(username) };
   }
 
-  private async isPublicOrgMember(username: string): Promise<boolean> {
-    const response = await this.requestRaw(`/orgs/${this.org}/members/${username}`);
-
-    if (response.status === 204) {
-      return true;
-    }
+  private async isOrgMember(username: string): Promise<boolean> {
+    const response = await this.requestRaw(`/orgs/${this.org}/memberships/${username}`);
 
     if (response.status === 404) {
       return false;
@@ -141,10 +138,8 @@ export class GitHubRestClient {
       throw await this.buildApiError(response);
     }
 
-    throw new GitHubApiError({
-      status: response.status,
-      message: `Unexpected GitHub membership response status ${response.status}`,
-    });
+    const membership = (await response.json()) as GitHubOrgMembershipResponse;
+    return membership.state === "active";
   }
 
   private async requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
