@@ -6,7 +6,7 @@ import { KanbanBoard } from "@/src/components/KanbanBoard";
 import { RefreshStatus } from "@/src/components/RefreshStatus";
 import { KANBAN_COLUMNS, type ErrorResponse, type KanbanResponse, type PullRequestCard } from "@/src/kanban/types";
 
-const DEFAULT_REFRESH_MINUTES: (typeof REFRESH_OPTIONS)[number] = 15;
+const DEFAULT_REFRESH_MINUTES: (typeof REFRESH_OPTIONS)[number] = 30;
 
 function matchesFilter(card: PullRequestCard, filter: ContributorFilter): boolean {
   if (filter === "all") {
@@ -182,19 +182,17 @@ export function KanbanPage() {
             <FilterControls
               filter={filter}
               refreshMinutes={refreshMinutes}
-              isRefreshing={isRefreshing}
               onFilterChange={setFilter}
               onRefreshMinutesChange={setRefreshMinutes}
-              onRefreshNow={() => {
-                void fetchBoard();
-              }}
             />
             <RefreshStatus
               isLoading={isLoading}
               isRefreshing={isRefreshing}
               lastRefreshedAt={board?.refreshedAt}
               error={error}
-              rateLimit={board?.rateLimit}
+              onRefreshNow={() => {
+                void fetchBoard();
+              }}
             />
           </div>
         </div>

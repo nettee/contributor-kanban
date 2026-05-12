@@ -1,4 +1,4 @@
-import type { ErrorResponse, KanbanResponse } from "@/src/kanban/types";
+import type { ErrorResponse } from "@/src/kanban/types";
 import { formatRelativeTime } from "@/src/time";
 
 type RefreshStatusProps = {
@@ -6,51 +6,47 @@ type RefreshStatusProps = {
   isRefreshing: boolean;
   lastRefreshedAt?: string;
   error: ErrorResponse | null;
-  rateLimit?: KanbanResponse["rateLimit"];
+  onRefreshNow: () => void;
 };
 
-export function RefreshStatus({ isLoading, isRefreshing, lastRefreshedAt, error, rateLimit }: RefreshStatusProps) {
+export function RefreshStatus({ isLoading, isRefreshing, lastRefreshedAt, error, onRefreshNow }: RefreshStatusProps) {
   const statusLabel = isLoading
-    ? "正在加载看板…"
+    ? "加载中…"
     : isRefreshing
-      ? "正在刷新数据…"
+      ? "刷新中…"
       : lastRefreshedAt
-        ? `上次刷新 ${formatRelativeTime(lastRefreshedAt)}`
-        : "等待首次加载";
+        ? `${formatRelativeTime(lastRefreshedAt)}刷新`
+        : "刚刚刷新";
 
   return (
-    <div className="space-y-3">
-      <section
-        aria-live="polite"
-        className="rounded-[1.75rem] border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-200 shadow-[0_16px_50px_rgba(2,6,23,0.3)] backdrop-blur-xl"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3" role="status">
-            <span
-              className={[
-                "h-2.5 w-2.5 rounded-full",
-                isLoading || isRefreshing ? "animate-pulse bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.7)]" : "bg-emerald-300",
-              ].join(" ")}
-            />
-            <span>{statusLabel}</span>
-          </div>
-
-          {rateLimit ? (
-            <div className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              剩余限额 {rateLimit.remaining ?? "—"}
-              {rateLimit.resetAt ? ` · 重置 ${formatRelativeTime(rateLimit.resetAt)}` : ""}
-            </div>
-          ) : null}
-        </div>
-      </section>
+    <>
+      <div className="flex items-center gap-2 text-xs text-[var(--muted)]" aria-live="polite">
+        <span role="status">{statusLabel}</span>
+        <button
+          type="button"
+          title="立即刷新"
+          onClick={onRefreshNow}
+          disabled={isRefreshing}
+          className={[
+            "inline-flex items-center gap-1 rounded border border-[var(--border)] bg-[var(--surface)] px-3 py-[5px] font-[var(--font-body)] text-xs font-normal leading-[18px] text-[var(--accent)] transition hover:border-[var(--purple-border)] hover:bg-[var(--purple-light)] disabled:cursor-not-allowed disabled:opacity-60",
+            isRefreshing ? "[&_svg]:animate-spin" : "",
+          ].join(" ")}
+        >
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1.5 1.5v4h4" />
+            <path d="M1.82 10a6.5 6.5 0 1 0 1.18-5L1.5 5.5" />
+          </svg>
+          刷新
+        </button>
+      </div>
 
       {error ? (
         <section
           role="alert"
-          className="rounded-[1.75rem] border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-100 shadow-[0_16px_50px_rgba(127,29,29,0.28)]"
+          className="basis-full rounded-md border border-[var(--danger-border)] bg-[var(--danger-bg)] p-3 text-xs text-[var(--danger)]"
         >
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-rose-200/90">请求失败</p>
-          <div className="mt-3 space-y-2">
+          <p className="font-medium">请求失败</p>
+          <div className="mt-2 space-y-1">
             <p>
               <span className="font-semibold">error:</span> {error.error}
             </p>
@@ -67,6 +63,6 @@ export function RefreshStatus({ isLoading, isRefreshing, lastRefreshedAt, error,
           </div>
         </section>
       ) : null}
-    </div>
+    </>
   );
 }

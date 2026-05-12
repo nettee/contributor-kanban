@@ -176,11 +176,11 @@ Flow:
   - [x] Substep 1.1 Implement: 将 `app/globals.css` 改为原型浅色背景、字体、token 基线。
   - [x] Substep 1.2 Implement: 将 `KanbanPage` 页面外壳改为 sticky header + board，删除 hero/统计模块。
   - [x] Substep 1.3 Verify: 更新并运行覆盖页面外壳与功能裁剪的 UI 测试。
-- [ ] Step 2: Header 控件视觉还原
-  - [ ] Substep 2.1 Implement: 将贡献者筛选改为原型 segmented control。
-  - [ ] Substep 2.2 Implement: 将刷新间隔改为 `15m/30m/60m` segmented control，并设置默认 `30m`。
-  - [ ] Substep 2.3 Implement: 将刷新时间与手动刷新按钮放入 header，错误态保留清晰反馈。
-  - [ ] Substep 2.4 Verify: 测试筛选、刷新间隔、手动刷新、错误态。
+- [x] Step 2: Header 控件视觉还原
+  - [x] Substep 2.1 Implement: 将贡献者筛选改为原型 segmented control。
+  - [x] Substep 2.2 Implement: 将刷新间隔改为 `15m/30m/60m` segmented control，并设置默认 `30m`。
+  - [x] Substep 2.3 Implement: 将刷新时间与手动刷新按钮放入 header，错误态保留清晰反馈。
+  - [x] Substep 2.4 Verify: 测试筛选、刷新间隔、手动刷新、错误态。
 - [ ] Step 3: Board 与 Card 视觉还原
   - [ ] Substep 3.1 Implement: 重写 `KanbanBoard` 为原型 5 列浅色布局、dot、title、count、横向滚动断点。
   - [ ] Substep 3.2 Implement: 重写 `PullRequestCard` 为原型字段和状态徽标，裁掉更新时间、本次刷新等字段。
@@ -215,9 +215,15 @@ Flow:
 - `app/globals.css` - 替换为原型浅色 token、系统字体、背景、文本颜色和 selection 基线。
 - `src/components/KanbanPage.tsx` - 页面外壳改为 sticky header + board，删除 hero、说明文案、当前视图和全部 PR 统计模块。
 - `app/page.test.tsx` - 更新加载态、页面外壳、repo 名和功能裁剪断言。
+- `src/components/FilterControls.tsx` - 将贡献者筛选和刷新间隔改为原型 segmented control，刷新间隔默认态对齐 `30m`。
+- `src/components/RefreshStatus.tsx` - 将刷新时间与手动刷新按钮收敛到 header inline 控件，保留错误 alert。
+- `src/components/KanbanPage.tsx` - Header 右侧组合为贡献者、刷新间隔、刷新状态和刷新按钮，默认刷新间隔改为 30 分钟。
+- `app/page.test.tsx` - 覆盖 segmented control 默认态、刷新间隔切换、手动刷新和错误态。
 
 ### Verification
 
 <!-- How the feature was verified: tests written, manual testing steps, results -->
+- `pnpm test -- app/page.test.tsx` - passed：31 tests / 6 files。
+- `pnpm typecheck` - passed。
 - `pnpm test -- app/page.test.tsx` - passed：31 tests / 6 files。
 - `pnpm typecheck` - passed。

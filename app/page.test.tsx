@@ -135,7 +135,8 @@ describe("HomePage", () => {
     expect(screen.getByText("Draft")).toBeInTheDocument();
     expect(screen.getAllByText(/活跃于/)).not.toHaveLength(0);
     expect(screen.getAllByText(/更新于/)).not.toHaveLength(0);
-    expect(screen.getByText(/上次刷新/)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/刷新/);
+    expect(screen.getByRole("button", { name: "30m" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("heading", { name: /Draft onboarding refresh/ })).toBeInTheDocument();
   });
 
@@ -168,7 +169,7 @@ describe("HomePage", () => {
     render(<HomePage />);
 
     expect(await screen.findByText("@alice")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "立即刷新" }));
+    fireEvent.click(screen.getByRole("button", { name: "刷新" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -202,7 +203,7 @@ describe("HomePage", () => {
 
     expect(signals[0].aborted).toBe(false);
 
-    fireEvent.click(screen.getByRole("button", { name: "立即刷新" }));
+    fireEvent.click(screen.getByRole("button", { name: "刷新" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -249,16 +250,14 @@ describe("HomePage", () => {
       await Promise.resolve();
     });
 
-    const intervalSelect = screen.getByLabelText("刷新间隔") as HTMLSelectElement;
+    expect(screen.getByRole("button", { name: "30m" })).toHaveAttribute("aria-pressed", "true");
 
-    expect(intervalSelect.value).toBe("15");
+    fireEvent.click(screen.getByRole("button", { name: "15m" }));
 
-    fireEvent.change(intervalSelect, { target: { value: "30" } });
-
-    expect(intervalSelect.value).toBe("30");
+    expect(screen.getByRole("button", { name: "15m" })).toHaveAttribute("aria-pressed", "true");
 
     await act(async () => {
-      vi.advanceTimersByTime(30 * 60 * 1000);
+      vi.advanceTimersByTime(15 * 60 * 1000);
       await Promise.resolve();
     });
 
@@ -267,7 +266,7 @@ describe("HomePage", () => {
     unmount();
 
     await act(async () => {
-      vi.advanceTimersByTime(30 * 60 * 1000);
+      vi.advanceTimersByTime(15 * 60 * 1000);
       await Promise.resolve();
     });
 
