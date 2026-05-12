@@ -9,7 +9,7 @@ created: '2026-05-12'
 
 ### 产品功能
 
-一个页面展示所有贡献者的 PR 状态。
+MVP 只面向 `nexu-io/open-design` 仓库，一个页面展示该仓库所有贡献者的 PR 状态。
 
 过滤条件：
 - 内部贡献者（组织成员）
@@ -58,6 +58,7 @@ created: '2026-05-12'
 ### Existing System
 - 仓库当前只有 `.git/` 与 `specs/`，没有应用代码、`package.json`、Next.js/Tailwind/TypeScript 配置或 GitHub API 集成；项目处于未初始化状态。Source: repository root directory listing, `specs/change/20260512-kanban-mvp/spec.md:44-54`
 - 既定产品约束是单页看板：过滤内部/外部/全部贡献者、5/10/30/60 分钟刷新、按 A/B/C/D/E 规则分列、按最后更新时间倒序排序。Source: `specs/change/20260512-kanban-mvp/spec.md:12-42`
+- MVP 目标仓库固定为 `nexu-io/open-design`；本阶段优先服务该仓库的 PR 看板体验。Source: `specs/change/20260512-kanban-mvp/spec.md:12`, `.env`
 - 既定技术倾向是 TypeScript + React + Tailwind + Next.js，前端单页应用。Source: `specs/change/20260512-kanban-mvp/spec.md:44-49`
 
 ### Available Approaches
@@ -107,9 +108,11 @@ flowchart LR
 ### Change Scope
 
 - Area: 项目初始化。Impact: 新增 Next.js App Router、TypeScript、Tailwind、测试工具链和本地开发脚本。Source: repository root directory listing, `specs/change/20260512-kanban-mvp/spec.md:44-49,58-61`
+- Area: 本地环境配置。Impact: 已创建 `.env` 并配置 `GITHUB_OWNER=nexu-io`、`GITHUB_REPO=open-design`、`GITHUB_ORG=nexu-io`、`GITHUB_TOKEN` 和 `GITHUB_REQUEST_CONCURRENCY=1`；`.gitignore` 已忽略 `.env`。Source: `.env`, `.gitignore`
 - Area: 服务端 GitHub 聚合 API。Impact: 新增 `/api/kanban`，在服务端读取 GitHub token、owner/repo/org 配置并返回看板 DTO。Source: `specs/change/20260512-kanban-mvp/spec.md:51-54`, https://nextjs.org/docs/app/getting-started/route-handlers#route-handlers, https://nextjs.org/docs/app/guides/environment-variables#loading-environment-variables
 - Area: GitHub 数据读取。Impact: 读取 open PR 列表、PR 详情、reviews、commits、issue comments、check runs/statuses、org membership，并按请求队列顺序执行。Source: https://docs.github.com/en/rest/pulls/pulls#list-pull-requests, https://docs.github.com/en/rest/pulls/pulls#about-pull-requests, https://docs.github.com/en/rest/checks/runs#list-check-runs-for-a-git-reference, https://docs.github.com/en/rest/pulls/reviews#list-reviews-for-a-pull-request, https://docs.github.com/en/rest/orgs/members#get-organization-membership-for-a-user
 - Area: UI 看板。Impact: 单页面展示过滤器、刷新间隔选择、立即刷新、五列卡片、相对时间和错误状态。Source: `specs/change/20260512-kanban-mvp/spec.md:12-42`
+- Area: MVP 仓库范围。Impact: 看板默认并优先服务 `nexu-io/open-design`，环境变量也指向该仓库；多仓库能力留到后续迭代。Source: `specs/change/20260512-kanban-mvp/spec.md:12`, `.env`
 - Area: 缓存与限流。Impact: 使用 `updated_at` 排序、ETag 条件请求和低并发队列，缓存 scope 限于服务端运行进程。Source: `specs/change/20260512-kanban-mvp/spec.md:51-54`, https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#use-conditional-requests-if-appropriate, https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#avoid-concurrent-requests
 
 ### Design Decisions
@@ -119,6 +122,7 @@ flowchart LR
 - Decision: MVP 使用 REST API 聚合，优先利用 REST `etag`/`last-modified` 条件请求减少 rate limit 消耗；GraphQL 保留为后续优化路径。Source: https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#use-conditional-requests-if-appropriate, https://docs.github.com/en/graphql/overview/rate-limits-and-node-limits-for-the-graphql-api#node-limit
 - Decision: GitHub 请求通过服务端队列执行，默认并发为 1，可用 `GITHUB_REQUEST_CONCURRENCY` 调整到小值；遇到 rate limit 按响应头抛出可展示错误。Source: https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#avoid-concurrent-requests, https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#handle-rate-limit-errors-appropriately
 - Decision: open PR 列表使用 `state=open&sort=updated&direction=desc&per_page=100` 分页获取，先展示最新更新 PR 的最终分类结果。Source: `specs/change/20260512-kanban-mvp/spec.md:42,51-54`, https://docs.github.com/en/rest/pulls/pulls#list-pull-requests, https://docs.github.com/en/rest/pulls/pulls#parameters
+- Decision: MVP 固定读取 `nexu-io/open-design`，通过 `.env` 中的 `GITHUB_OWNER=nexu-io` 和 `GITHUB_REPO=open-design` 驱动；UI 暂无仓库切换入口。Source: `specs/change/20260512-kanban-mvp/spec.md:12`, `.env`
 - Decision: 内部/外部贡献者判定使用 `GET /orgs/{org}/memberships/{username}` 并缓存 login 结果；404/非 active membership 归为外部。Source: `specs/change/20260512-kanban-mvp/spec.md:14-17`, https://docs.github.com/en/rest/orgs/members#get-organization-membership-for-a-user
 - Decision: 卡片业务更新时间 `activityAt` 取 PR 作者最新 commit 时间、PR 作者 issue comment 时间、PR 作者 review 提交时间三者最大值；列表排序使用 `activityAt` 倒序。Source: `specs/change/20260512-kanban-mvp/spec.md:38,42,79`, https://docs.github.com/en/rest/pulls/pulls#about-pull-requests
 - Decision: 分类规则按需求固定优先级执行：Draft → 不可合并 → CHANGE_REQUESTED → 可合并 → 处理中；每个分类返回 `detailStatus` 用于卡片展示。Source: `specs/change/20260512-kanban-mvp/spec.md:25-31,37`
@@ -164,6 +168,8 @@ Classifier:
 ### File Structure
 
 - `package.json` - Next.js、React、TypeScript、Tailwind、测试脚本。
+- `.env` - 本地 GitHub 仓库、组织、token 与请求并发配置。
+- `.gitignore` - 忽略 `.env`、本地依赖、构建产物和覆盖率目录。
 - `next.config.ts` - Next.js 配置。
 - `tsconfig.json` - TypeScript 配置。
 - `postcss.config.mjs` - Tailwind/PostCSS 配置。
@@ -236,7 +242,7 @@ type ErrorResponse = {
 ## Plan
 
 - [ ] Step 1: 初始化 Next.js + 测试基础
-  - [ ] Substep 1.1 Implement: 创建 Next.js App Router、TypeScript、Tailwind、基础布局和脚本。
+  - [ ] Substep 1.1 Implement: 创建 Next.js App Router、TypeScript、Tailwind、基础布局和脚本，保留现有 `.env` 与 `.gitignore`。
   - [ ] Substep 1.2 Implement: 配置 Vitest/Testing Library 与基础测试命令。
   - [ ] Substep 1.3 Implement: 创建 `src/config.ts` 并实现服务端 env 校验。
   - [ ] Substep 1.4 Verify: 运行 lint/typecheck/test，确认空应用和 env 校验测试通过。
@@ -256,7 +262,7 @@ type ErrorResponse = {
   - [ ] Substep 4.3 Implement: 实现加载、刷新中、上次刷新时间和错误状态。
   - [ ] Substep 4.4 Verify: 覆盖过滤、刷新、错误展示、卡片字段渲染的组件测试。
 - [ ] Step 5: 集成验证与稳定化
-  - [ ] Substep 5.1 Implement: 添加 `.env.example` 和 README 本地运行说明。
+  - [ ] Substep 5.1 Implement: 添加 `.env.example` 和 README 本地运行说明，避免提交真实 `.env` token。
   - [ ] Substep 5.2 Verify: 运行 lint/typecheck/test/build。
   - [ ] Substep 5.3 Verify: 使用真实 GitHub 仓库配置进行本地手动验证。
   - [ ] Substep 5.4 Verify: 记录验证结果与实现偏差到 Notes。
@@ -267,7 +273,8 @@ type ErrorResponse = {
 
 ### Implementation
 
-<!-- Files created/modified, decisions made during coding, deviations from design -->
+- `.env` - 已配置 GitHub 目标仓库 `nexu-io/open-design`、组织 `nexu-io`、本地 token 和请求并发。
+- `.gitignore` - 已忽略 `.env`、`.env*.local`、依赖、构建产物和覆盖率目录。
 
 ### Verification
 
