@@ -62,9 +62,10 @@ function createClient(): KanbanClient {
 
 describe("buildKanbanResponse", () => {
   it("builds columns, contributor type, activityAt, and descending card order", async () => {
-    const response = await buildKanbanResponse(createClient(), "2026-05-12T13:00:00.000Z");
+    const response = await buildKanbanResponse(createClient(), "owner/repo", "2026-05-12T13:00:00.000Z");
     const mergeable = response.columns.find((column) => column.id === "E");
 
+    expect(response.repository).toBe("owner/repo");
     expect(response.refreshedAt).toBe("2026-05-12T13:00:00.000Z");
     expect(response.columns.map((column) => column.id)).toEqual(["A", "B", "C", "D", "E"]);
     expect(mergeable?.cards.map((card) => card.number)).toEqual([2, 1]);

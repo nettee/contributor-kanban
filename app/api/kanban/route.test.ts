@@ -84,6 +84,7 @@ describe("GET /api/kanban", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
+    expect(body.repository).toBe("o/r");
     expect(body.columns.map((column: { id: string }) => column.id)).toEqual(["A", "B", "C", "D", "E"]);
     expect(body.refreshedAt).toEqual(expect.any(String));
   });

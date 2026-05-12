@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import HomePage from "./page";
 
 const boardResponse: KanbanResponse = {
+  repository: "nexu-io/open-design",
   refreshedAt: "2026-05-12T11:58:00.000Z",
   rateLimit: { remaining: 4991, resetAt: "2026-05-12T13:00:00.000Z" },
   columns: [
@@ -123,13 +124,13 @@ describe("HomePage", () => {
 
     render(<HomePage />);
 
-    expect(screen.getByText("acme/platform")).toBeInTheDocument();
+    expect(await screen.findByText("nexu-io/open-design")).toBeInTheDocument();
     expect(screen.getByTestId("kanban-shell")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "nexu-io/open-design PR 看板" })).toBeNull();
     expect(screen.queryByText("当前视图")).toBeNull();
     expect(screen.queryByText("全部 PR")).toBeNull();
     expect(screen.queryByText(/在单页里追踪所有 open PR/)).toBeNull();
-    expect(await screen.findByText("alice")).toBeInTheDocument();
+    expect(screen.getByText("alice")).toBeInTheDocument();
     expect(screen.getByText("#101")).toBeInTheDocument();
     expect(screen.getAllByText("内部")).not.toHaveLength(0);
     expect(screen.getByText("Draft")).toBeInTheDocument();

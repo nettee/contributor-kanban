@@ -28,7 +28,10 @@ export function createKanbanHandler(dependencies: HandlerDependencies = {}) {
         return NextResponse.json(cached);
       }
 
-      const response = isSummaryRequest ? await buildKanbanSummaryResponse(client) : await buildKanbanResponse(client);
+      const repository = `${config.githubOwner}/${config.githubRepo}`;
+      const response = isSummaryRequest
+        ? await buildKanbanSummaryResponse(client, repository)
+        : await buildKanbanResponse(client, repository);
       setCached(cacheKey, response, KANBAN_CACHE_TTL_MS);
 
       return NextResponse.json(response);

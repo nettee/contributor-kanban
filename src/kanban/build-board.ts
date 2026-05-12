@@ -34,11 +34,16 @@ type PullRequestDetails = {
   isInternal: boolean;
 };
 
-export async function buildKanbanResponse(client: KanbanClient, refreshedAt = new Date().toISOString()): Promise<KanbanResponse> {
+export async function buildKanbanResponse(
+  client: KanbanClient,
+  repository: string,
+  refreshedAt = new Date().toISOString(),
+): Promise<KanbanResponse> {
   const pullRequests = await client.listOpenPullRequests();
   const cards = await Promise.all(pullRequests.map((listItem) => buildCard(client, listItem)));
 
   return {
+    repository,
     refreshedAt,
     columns: buildColumns(cards),
   };
@@ -46,12 +51,14 @@ export async function buildKanbanResponse(client: KanbanClient, refreshedAt = ne
 
 export async function buildKanbanSummaryResponse(
   client: Pick<KanbanClient, "listOpenPullRequests">,
+  repository: string,
   refreshedAt = new Date().toISOString(),
 ): Promise<KanbanResponse> {
   const pullRequests = await client.listOpenPullRequests();
   const cards = pullRequests.map(buildSummaryCard);
 
   return {
+    repository,
     refreshedAt,
     columns: buildColumns(cards),
   };

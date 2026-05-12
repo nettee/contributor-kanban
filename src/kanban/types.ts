@@ -26,6 +26,7 @@ export type KanbanColumn = {
 };
 
 export type KanbanResponse = {
+  repository: string;
   refreshedAt: string;
   columns: KanbanColumn[];
   rateLimit?: { remaining?: number; resetAt?: string };
