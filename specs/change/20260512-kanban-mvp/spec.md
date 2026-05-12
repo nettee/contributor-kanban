@@ -241,11 +241,11 @@ type ErrorResponse = {
 
 ## Plan
 
-- [ ] Step 1: 初始化 Next.js + 测试基础
-  - [ ] Substep 1.1 Implement: 创建 Next.js App Router、TypeScript、Tailwind、基础布局和脚本，保留现有 `.env` 与 `.gitignore`。
-  - [ ] Substep 1.2 Implement: 配置 Vitest/Testing Library 与基础测试命令。
-  - [ ] Substep 1.3 Implement: 创建 `src/config.ts` 并实现服务端 env 校验。
-  - [ ] Substep 1.4 Verify: 运行 lint/typecheck/test，确认空应用和 env 校验测试通过。
+- [x] Step 1: 初始化 Next.js + 测试基础
+  - [x] Substep 1.1 Implement: 创建 Next.js App Router、TypeScript、Tailwind、基础布局和脚本，保留现有 `.env` 与 `.gitignore`。
+  - [x] Substep 1.2 Implement: 配置 Vitest/Testing Library 与基础测试命令。
+  - [x] Substep 1.3 Implement: 创建 `src/config.ts` 并实现服务端 env 校验。
+  - [x] Substep 1.4 Verify: 运行 lint/typecheck/test，确认空应用和 env 校验测试通过。
 - [ ] Step 2: 实现 GitHub 数据层
   - [ ] Substep 2.1 Implement: 实现 REST client、分页、ETag 缓存、非 2xx 错误和 rate limit 错误。
   - [ ] Substep 2.2 Implement: 实现低并发请求队列和 org membership 缓存。
@@ -275,7 +275,16 @@ type ErrorResponse = {
 
 - `.env` - 已配置 GitHub 目标仓库 `nexu-io/open-design`、组织 `nexu-io`、本地 token 和请求并发。
 - `.gitignore` - 已忽略 `.env`、`.env*.local`、依赖、构建产物和覆盖率目录。
+- `package.json` / `package-lock.json` - 新增 Next.js、React、TypeScript、Tailwind、Vitest、Testing Library、ESLint 依赖与脚本。
+- `app/layout.tsx` / `app/page.tsx` / `app/globals.css` - 新增 App Router 基础页面、全局布局和 Tailwind 样式入口。
+- `next.config.ts` / `tsconfig.json` / `postcss.config.mjs` / `tailwind.config.ts` / `eslint.config.mjs` / `vitest.config.ts` / `vitest.setup.ts` - 新增框架、样式、Lint 和测试配置。
+- `src/config.ts` - 新增服务端 GitHub env 校验，缺失必填配置或非法并发值时抛出 `ConfigError`。
+- `src/config.test.ts` / `app/page.test.tsx` - 覆盖 env 校验和初始化页面渲染。
 
 ### Verification
 
 <!-- How the feature was verified: tests written, manual testing steps, results -->
+- `npm run lint` - passed。
+- `npm run typecheck` - passed。
+- `npm test` - passed，2 个测试文件、5 个测试。
+- `npm run build` - passed。

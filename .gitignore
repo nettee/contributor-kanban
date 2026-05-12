@@ -6,3 +6,5 @@ dist/
 coverage/
 
 specs/change/active
+.ralph/
+task.md
