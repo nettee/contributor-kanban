@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ConfigError } from "../../../src/config";
 import { GitHubApiError } from "../../../src/github/client";
 import type { KanbanClient } from "../../../src/kanban/build-board";
-import { createKanbanHandler } from "./route";
+import { createKanbanHandler } from "./handler";
 
 function emptyClient(): KanbanClient {
   return {

@@ -3,7 +3,6 @@ import type {
   GitHubCheckRunsResponse,
   GitHubCommit,
   GitHubIssueComment,
-  GitHubMembership,
   GitHubOrgMembership,
   GitHubPullRequest,
   GitHubPullRequestListItem,
@@ -123,26 +122,34 @@ export class GitHubRestClient {
   }
 
   private async requestMembership(username: string): Promise<GitHubOrgMembership> {
-    try {
-      const membership = await this.requestJson<GitHubMembership>(`/orgs/${this.org}/memberships/${username}`);
-      return { login: membership.user.login, isInternal: membership.state === "active" };
-    } catch (error) {
-      if (error instanceof GitHubApiError && error.status === 404) {
-        return { login: username, isInternal: false };
-      }
+    return { login: username, isInternal: await this.isPublicOrgMember(username) };
+  }
 
-      throw error;
+  private async isPublicOrgMember(username: string): Promise<boolean> {
+    const response = await this.requestRaw(`/orgs/${this.org}/members/${username}`);
+
+    if (response.status === 204) {
+      return true;
     }
+
+    if (response.status === 404) {
+      return false;
+    }
+
+    if (!response.ok) {
+      throw await this.buildApiError(response);
+    }
+
+    throw new GitHubApiError({
+      status: response.status,
+      message: `Unexpected GitHub membership response status ${response.status}`,
+    });
   }
 
   private async requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const url = `${GITHUB_API_URL}${path}`;
     const cacheEntry = this.responseCache.get(url);
-    const headers = new Headers({
-      Authorization: `Bearer ${this.token}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": GITHUB_API_VERSION,
-    });
+    const headers = this.createHeaders();
 
     if (cacheEntry?.etag) {
       headers.set("If-None-Match", cacheEntry.etag);
@@ -152,12 +159,7 @@ export class GitHubRestClient {
       headers.set("If-Modified-Since", cacheEntry.lastModified);
     }
 
-    const response = await this.queue.enqueue(() =>
-      this.fetchImplementation(url, {
-        method: options.method ?? "GET",
-        headers,
-      }),
-    );
+    const response = await this.requestRaw(path, { ...options, headers });
 
     if (response.status === 304) {
       if (!cacheEntry) {
@@ -178,6 +180,23 @@ export class GitHubRestClient {
       lastModified: response.headers.get("last-modified") ?? undefined,
     });
     return body;
+  }
+
+  private requestRaw(path: string, options: RequestOptions & { headers?: Headers } = {}): Promise<Response> {
+    return this.queue.enqueue(() =>
+      this.fetchImplementation(`${GITHUB_API_URL}${path}`, {
+        method: options.method ?? "GET",
+        headers: options.headers ?? this.createHeaders(),
+      }),
+    );
+  }
+
+  private createHeaders(): Headers {
+    return new Headers({
+      Authorization: `Bearer ${this.token}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": GITHUB_API_VERSION,
+    });
   }
 
   private async buildApiError(response: Response): Promise<GitHubApiError> {

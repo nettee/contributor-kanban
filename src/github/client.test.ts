@@ -138,7 +138,7 @@ describe("GitHubRestClient", () => {
     vi.useRealTimers();
   });
 
-  it("returns external membership on 404 and caches membership lookups", async () => {
+  it("returns public org membership and caches membership lookups", async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()
       .mockResolvedValue(new Response(JSON.stringify({ message: "Not Found" }), { status: 404 }));
@@ -148,5 +148,13 @@ describe("GitHubRestClient", () => {
     await expect(client.getMembership("alice")).resolves.toEqual({ login: "alice", isInternal: false });
     await expect(client.getMembership("alice")).resolves.toEqual({ login: "alice", isInternal: false });
     expect(fetchImplementation).toHaveBeenCalledTimes(1);
+    expect(fetchImplementation.mock.calls[0]?.[0]).toContain("/orgs/org/members/alice");
+  });
+
+  it("returns internal membership on 204", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }));
+    const client = createClient(fetchImplementation);
+
+    await expect(client.getMembership("alice")).resolves.toEqual({ login: "alice", isInternal: true });
   });
 });

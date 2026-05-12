@@ -76,12 +76,6 @@ export type GitHubStatus = {
   updated_at: string;
 };
 
-export type GitHubMembership = {
-  state: string;
-  role: string;
-  user: GitHubUser;
-};
-
 export type GitHubRateLimit = {
   limit?: number;
   remaining?: number;

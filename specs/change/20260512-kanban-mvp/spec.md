@@ -1,7 +1,7 @@
 ---
 id: 20260512-kanban-mvp
 name: Kanban Mvp
-status: designed
+status: implemented
 created: '2026-05-12'
 ---
 
@@ -123,7 +123,7 @@ flowchart LR
 - Decision: GitHub 请求通过服务端队列执行，默认并发为 1，可用 `GITHUB_REQUEST_CONCURRENCY` 调整到小值；遇到 rate limit 按响应头抛出可展示错误。Source: https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#avoid-concurrent-requests, https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#handle-rate-limit-errors-appropriately
 - Decision: open PR 列表使用 `state=open&sort=updated&direction=desc&per_page=100` 分页获取，先展示最新更新 PR 的最终分类结果。Source: `specs/change/20260512-kanban-mvp/spec.md:42,51-54`, https://docs.github.com/en/rest/pulls/pulls#list-pull-requests, https://docs.github.com/en/rest/pulls/pulls#parameters
 - Decision: MVP 固定读取 `nexu-io/open-design`，通过 `.env` 中的 `GITHUB_OWNER=nexu-io` 和 `GITHUB_REPO=open-design` 驱动；UI 暂无仓库切换入口。Source: `specs/change/20260512-kanban-mvp/spec.md:12`, `.env`
-- Decision: 内部/外部贡献者判定使用 `GET /orgs/{org}/memberships/{username}` 并缓存 login 结果；404/非 active membership 归为外部。Source: `specs/change/20260512-kanban-mvp/spec.md:14-17`, https://docs.github.com/en/rest/orgs/members#get-organization-membership-for-a-user
+- Decision: 内部/外部贡献者判定使用公开成员端点 `GET /orgs/{org}/members/{username}` 并缓存 login 结果；204 归为内部，404 归为外部。Source: `specs/change/20260512-kanban-mvp/spec.md:14-17`, `src/github/client.ts`
 - Decision: 卡片业务更新时间 `activityAt` 取 PR 作者最新 commit 时间、PR 作者 issue comment 时间、PR 作者 review 提交时间三者最大值；列表排序使用 `activityAt` 倒序。Source: `specs/change/20260512-kanban-mvp/spec.md:38,42,79`, https://docs.github.com/en/rest/pulls/pulls#about-pull-requests
 - Decision: 分类规则按需求固定优先级执行：Draft → 不可合并 → CHANGE_REQUESTED → 可合并 → 处理中；每个分类返回 `detailStatus` 用于卡片展示。Source: `specs/change/20260512-kanban-mvp/spec.md:25-31,37`
 - Decision: “不可合并”由失败/取消的 check/status 或 PR `mergeable === false` 触发；`mergeable === null` 归入处理中并显示“合并状态计算中”。Source: `specs/change/20260512-kanban-mvp/spec.md:27,30,37`, https://docs.github.com/en/rest/checks/runs#list-check-runs-for-a-git-reference
@@ -261,11 +261,11 @@ type ErrorResponse = {
   - [x] Substep 4.2 Implement: 实现五列看板、PR 卡片、两行标题截断、内部/外部标记、相对时间。
   - [x] Substep 4.3 Implement: 实现加载、刷新中、上次刷新时间和错误状态。
   - [x] Substep 4.4 Verify: 覆盖过滤、刷新、错误展示、卡片字段渲染的组件测试。
-- [ ] Step 5: 集成验证与稳定化
-  - [ ] Substep 5.1 Implement: 添加 `.env.example` 和 README 本地运行说明，避免提交真实 `.env` token。
-  - [ ] Substep 5.2 Verify: 运行 lint/typecheck/test/build。
-  - [ ] Substep 5.3 Verify: 使用真实 GitHub 仓库配置进行本地手动验证。
-  - [ ] Substep 5.4 Verify: 记录验证结果与实现偏差到 Notes。
+- [x] Step 5: 集成验证与稳定化
+  - [x] Substep 5.1 Implement: 添加 `.env.example` 和 README 本地运行说明，避免提交真实 `.env` token。
+  - [x] Substep 5.2 Verify: 运行 lint/typecheck/test/build。
+  - [x] Substep 5.3 Verify: 使用真实 GitHub 仓库配置进行本地手动验证。
+  - [x] Substep 5.4 Verify: 记录验证结果与实现偏差到 Notes。
 
 ## Notes
 
@@ -298,6 +298,11 @@ type ErrorResponse = {
 - `src/time.ts` - 新增中文相对时间格式化工具。
 - `app/page.test.tsx` - 更新组件测试，mock `/api/kanban` 响应，覆盖初始加载、卡片字段、过滤切换、立即刷新、错误展示和刷新间隔自动轮询。
 - `app/globals.css` - 补充页面字体渲染和选择框暗色主题样式。
+- `.env.example` - 新增本地 GitHub 配置模板，使用占位 token。
+- `README.md` - 新增本地安装、环境变量、开发服务器和验证命令说明。
+- `app/api/kanban/handler.ts` / `app/api/kanban/route.ts` - 将可测试 handler 移出 route 文件，满足 Next.js route export 约束并保留测试注入能力。
+- `src/github/client.ts` - 内部/外部贡献者判定改为公开 org members 端点，避免 fine-grained PAT 缺少 org membership 权限时阻断公开仓库看板加载。
+- `src/github/client.test.ts` - 补充 204 public org member 覆盖，更新 membership 404 缓存断言。
 
 ### Verification
 
@@ -315,3 +320,6 @@ type ErrorResponse = {
 - `npm test` - passed，6 个测试文件、21 个测试；覆盖 Step 3 分类器、看板 DTO 构建和 API route 错误/成功响应。
 - `npm run typecheck` - passed。
 - `npm run lint` - passed。
+- `npm run lint && npm run typecheck && npm test && npm run build` - passed，6 个测试文件、27 个测试，生产构建通过。
+- 本地手动验证：`GITHUB_REQUEST_CONCURRENCY=10 npm run dev -- -p 3100` 后请求 `http://127.0.0.1:3100/api/kanban` 返回 200；真实 `nexu-io/open-design` 数据共 121 张卡片，列分布 A=13、B=45、C=29、D=19、E=15。
+- 稳定化偏差记录：Next.js route 文件只导出 `GET`，测试 helper 移到 `app/api/kanban/handler.ts`；membership 判定使用公开 org members 端点，当前 MVP 会把私有组织成员显示为外部贡献者。
