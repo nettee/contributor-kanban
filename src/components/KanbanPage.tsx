@@ -167,60 +167,42 @@ export function KanbanPage() {
     [board, filter],
   );
 
-  const totalCards = board?.columns.reduce((sum, column) => sum + column.cards.length, 0) ?? 0;
-  const visibleCards = visibleColumns.reduce((sum, column) => sum + column.cards.length, 0);
-
   return (
-    <main className="relative min-h-screen overflow-hidden px-6 py-8 text-slate-100 md:px-8 lg:px-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.14),_transparent_38%),radial-gradient(circle_at_75%_20%,_rgba(192,132,252,0.12),_transparent_30%)]" />
-
-      <div className="relative mx-auto flex w-full max-w-none flex-col gap-6">
-        <section className="rounded-[2.4rem] border border-white/10 bg-slate-950/55 p-7 shadow-[0_30px_90px_rgba(2,6,23,0.45)] backdrop-blur-2xl md:p-9">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.45em] text-cyan-300/90">Contributor Kanban</p>
-              <h1 className="mt-4 text-4xl leading-tight text-white md:text-5xl" style={{ fontFamily: "var(--font-display)" }}>
-                nexu-io/open-design PR 看板
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 md:text-lg">
-                在单页里追踪所有 open PR 的流转状态，按贡献者类型筛选，并通过自动轮询保持看板信息新鲜可见。
-              </p>
-            </div>
-
-            <div className="grid gap-3 rounded-[1.8rem] border border-white/10 bg-white/5 p-4 text-sm text-slate-200 sm:grid-cols-2 lg:min-w-80">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">当前视图</p>
-                <p className="mt-2 text-2xl font-semibold text-white">{visibleCards}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">全部 PR</p>
-                <p className="mt-2 text-2xl font-semibold text-white">{totalCards}</p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
+      <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-white/85 px-6 py-4 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2 font-[var(--font-display)] text-lg font-medium tracking-[-0.01em] text-[var(--fg)]">
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 16 16" fill="currentColor" className="text-[var(--muted)]">
+              <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z" />
+            </svg>
+            <span>acme/platform</span>
           </div>
-        </section>
 
-        <FilterControls
-          filter={filter}
-          refreshMinutes={refreshMinutes}
-          isRefreshing={isRefreshing}
-          onFilterChange={setFilter}
-          onRefreshMinutesChange={setRefreshMinutes}
-          onRefreshNow={() => {
-            void fetchBoard();
-          }}
-        />
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            <FilterControls
+              filter={filter}
+              refreshMinutes={refreshMinutes}
+              isRefreshing={isRefreshing}
+              onFilterChange={setFilter}
+              onRefreshMinutesChange={setRefreshMinutes}
+              onRefreshNow={() => {
+                void fetchBoard();
+              }}
+            />
+            <RefreshStatus
+              isLoading={isLoading}
+              isRefreshing={isRefreshing}
+              lastRefreshedAt={board?.refreshedAt}
+              error={error}
+              rateLimit={board?.rateLimit}
+            />
+          </div>
+        </div>
+      </header>
 
-        <RefreshStatus
-          isLoading={isLoading}
-          isRefreshing={isRefreshing}
-          lastRefreshedAt={board?.refreshedAt}
-          error={error}
-          rateLimit={board?.rateLimit}
-        />
-
+      <main className="mx-auto max-w-[1600px] px-6 py-6" data-testid="kanban-shell">
         <KanbanBoard columns={visibleColumns} isLoading={isLoading && !board} refreshedAt={board?.refreshedAt} />
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

@@ -172,10 +172,10 @@ Flow:
 
 ## Plan
 
-- [ ] Step 1: 全局视觉 token 与页面外壳
-  - [ ] Substep 1.1 Implement: 将 `app/globals.css` 改为原型浅色背景、字体、token 基线。
-  - [ ] Substep 1.2 Implement: 将 `KanbanPage` 页面外壳改为 sticky header + board，删除 hero/统计模块。
-  - [ ] Substep 1.3 Verify: 更新并运行覆盖页面外壳与功能裁剪的 UI 测试。
+- [x] Step 1: 全局视觉 token 与页面外壳
+  - [x] Substep 1.1 Implement: 将 `app/globals.css` 改为原型浅色背景、字体、token 基线。
+  - [x] Substep 1.2 Implement: 将 `KanbanPage` 页面外壳改为 sticky header + board，删除 hero/统计模块。
+  - [x] Substep 1.3 Verify: 更新并运行覆盖页面外壳与功能裁剪的 UI 测试。
 - [ ] Step 2: Header 控件视觉还原
   - [ ] Substep 2.1 Implement: 将贡献者筛选改为原型 segmented control。
   - [ ] Substep 2.2 Implement: 将刷新间隔改为 `15m/30m/60m` segmented control，并设置默认 `30m`。
@@ -212,7 +212,12 @@ Flow:
 ### Implementation
 
 <!-- Files created/modified, decisions made during coding, deviations from design -->
+- `app/globals.css` - 替换为原型浅色 token、系统字体、背景、文本颜色和 selection 基线。
+- `src/components/KanbanPage.tsx` - 页面外壳改为 sticky header + board，删除 hero、说明文案、当前视图和全部 PR 统计模块。
+- `app/page.test.tsx` - 更新加载态、页面外壳、repo 名和功能裁剪断言。
 
 ### Verification
 
 <!-- How the feature was verified: tests written, manual testing steps, results -->
+- `pnpm test -- app/page.test.tsx` - passed：31 tests / 6 files。
+- `pnpm typecheck` - passed。

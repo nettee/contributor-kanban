@@ -111,7 +111,7 @@ describe("HomePage", () => {
 
     render(<HomePage />);
 
-    expect(screen.getByText("正在加载看板…")).toBeInTheDocument();
+    expect(screen.getAllByText("加载中…").length).toBeGreaterThan(0);
 
     deferred.resolve(jsonResponse(boardResponse));
 
@@ -123,7 +123,12 @@ describe("HomePage", () => {
 
     render(<HomePage />);
 
-    expect(screen.getByRole("heading", { name: "nexu-io/open-design PR 看板" })).toBeInTheDocument();
+    expect(screen.getByText("acme/platform")).toBeInTheDocument();
+    expect(screen.getByTestId("kanban-shell")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "nexu-io/open-design PR 看板" })).toBeNull();
+    expect(screen.queryByText("当前视图")).toBeNull();
+    expect(screen.queryByText("全部 PR")).toBeNull();
+    expect(screen.queryByText(/在单页里追踪所有 open PR/)).toBeNull();
     expect(await screen.findByText("@alice")).toBeInTheDocument();
     expect(screen.getByText("PR #101")).toBeInTheDocument();
     expect(screen.getAllByText("内部")).not.toHaveLength(0);
