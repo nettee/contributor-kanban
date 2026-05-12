@@ -63,6 +63,23 @@ describe("GitHubRestClient", () => {
     expect(fetchImplementation.mock.calls[1]?.[0]).toContain("page=2");
   });
 
+  it("paginates pull request reviews until the final short page", async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => ({ id: index + 1, state: "APPROVED" }));
+    const secondPage = [{ id: 101, state: "COMMENTED" }];
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify(firstPage), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(secondPage), { status: 200 }));
+
+    const client = createClient(fetchImplementation);
+    const result = await client.listPullRequestReviews(42);
+
+    expect(result).toHaveLength(101);
+    expect(fetchImplementation).toHaveBeenCalledTimes(2);
+    expect(fetchImplementation.mock.calls[0]?.[0]).toContain("/pulls/42/reviews?per_page=100&page=1");
+    expect(fetchImplementation.mock.calls[1]?.[0]).toContain("/pulls/42/reviews?per_page=100&page=2");
+  });
+
   it("returns cached response body on 304", async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()

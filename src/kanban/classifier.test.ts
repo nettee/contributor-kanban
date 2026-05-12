@@ -57,6 +57,42 @@ describe("classifyPullRequest", () => {
     ).toEqual({ column: "B", detailStatus: "CI 未通过（1 项）" });
   });
 
+  it("counts only the latest commit status per context", () => {
+    expect(
+      classifyPullRequest({
+        pullRequest: pullRequest(),
+        reviews: [review("APPROVED", "2026-05-12T10:00:00.000Z")],
+        checkRuns: [],
+        statuses: [
+          {
+            id: 1,
+            state: "failure",
+            context: "lint",
+            description: null,
+            target_url: null,
+            updated_at: "2026-05-12T10:00:00.000Z",
+          },
+          {
+            id: 2,
+            state: "success",
+            context: "lint",
+            description: null,
+            target_url: null,
+            updated_at: "2026-05-12T11:00:00.000Z",
+          },
+          {
+            id: 3,
+            state: "error",
+            context: "test",
+            description: null,
+            target_url: null,
+            updated_at: "2026-05-12T12:00:00.000Z",
+          },
+        ],
+      }),
+    ).toEqual({ column: "B", detailStatus: "CI 未通过（1 项）" });
+  });
+
   it("uses latest meaningful review per reviewer for change requests", () => {
     expect(
       classifyPullRequest({

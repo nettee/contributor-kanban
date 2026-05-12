@@ -49,7 +49,17 @@ function countFailingChecks(checkRuns: GitHubCheckRun[], statuses: GitHubStatus[
   const failedCheckRuns = checkRuns.filter((checkRun) =>
     checkRun.conclusion ? FAILURE_CHECK_CONCLUSIONS.has(checkRun.conclusion) : false,
   ).length;
-  const failedStatuses = statuses.filter((status) => FAILURE_STATUS_STATES.has(status.state)).length;
+  const latestStatuses = new Map<string, GitHubStatus>();
+
+  for (const status of statuses) {
+    const previous = latestStatuses.get(status.context);
+    if (!previous || new Date(status.updated_at).getTime() > new Date(previous.updated_at).getTime()) {
+      latestStatuses.set(status.context, status);
+    }
+  }
+
+  const failedStatuses = Array.from(latestStatuses.values()).filter((status) => FAILURE_STATUS_STATES.has(status.state))
+    .length;
   return failedCheckRuns + failedStatuses;
 }
 

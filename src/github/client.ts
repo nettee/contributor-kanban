@@ -91,8 +91,23 @@ export class GitHubRestClient {
     return this.requestJson(`/repos/${this.owner}/${this.repo}/pulls/${number}`);
   }
 
-  listPullRequestReviews(number: number): Promise<GitHubReview[]> {
-    return this.requestJson(`/repos/${this.owner}/${this.repo}/pulls/${number}/reviews`);
+  async listPullRequestReviews(number: number): Promise<GitHubReview[]> {
+    const reviews: GitHubReview[] = [];
+    let page = 1;
+
+    while (true) {
+      const response = await this.requestJson<GitHubReview[]>(
+        `/repos/${this.owner}/${this.repo}/pulls/${number}/reviews?per_page=100&page=${page}`,
+      );
+
+      reviews.push(...response);
+
+      if (response.length < 100) {
+        return reviews;
+      }
+
+      page += 1;
+    }
   }
 
   listPullRequestCommits(number: number): Promise<GitHubCommit[]> {
