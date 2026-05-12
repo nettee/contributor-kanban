@@ -186,12 +186,12 @@ Flow:
   - [x] Substep 3.2 Implement: 重写 `PullRequestCard` 为原型字段和状态徽标，裁掉更新时间、本次刷新等字段。
   - [x] Substep 3.3 Implement: 增加 `A-E` 到原型列 class/status style 的前端映射。
   - [x] Substep 3.4 Verify: 测试列顺序、列计数、卡片字段、空列文案、功能裁剪。
-- [ ] Step 4: 截图验证与最终稳定
-  - [ ] Substep 4.1 Implement: 记录本地验证命令，分别启动 app 服务和 prototype 静态服务。
-  - [ ] Substep 4.2 Verify: 使用 agent-browser CLI 与 Chrome DevTools MCP 在常见桌面分辨率截图对比。
-  - [ ] Substep 4.3 Verify: 执行验证-修复-验证循环；截图对比发现差异后立即修复，再重新截图验证，直到本轮验证通过。
-  - [ ] Substep 4.4 Verify: 使用组件源码和 DevTools computed styles 复核截图差异。
-  - [ ] Substep 4.5 Verify: 运行 `pnpm lint`、`pnpm typecheck`、`pnpm test`、`pnpm build`。
+- [x] Step 4: 截图验证与最终稳定
+  - [x] Substep 4.1 Implement: 记录本地验证命令，分别启动 app 服务和 prototype 静态服务。
+  - [x] Substep 4.2 Verify: 使用 agent-browser CLI 与 Chrome DevTools MCP 在常见桌面分辨率截图对比。
+  - [x] Substep 4.3 Verify: 执行验证-修复-验证循环；截图对比发现差异后立即修复，再重新截图验证，直到本轮验证通过。
+  - [x] Substep 4.4 Verify: 使用组件源码和 DevTools computed styles 复核截图差异。
+  - [x] Substep 4.5 Verify: 运行 `pnpm lint`、`pnpm typecheck`、`pnpm test`、`pnpm build`。
 - [ ] Step 5: 第二轮截图验证与视觉修正
   - [ ] Substep 5.1 Implement: 记录本地验证命令，分别启动 app 服务和 prototype 静态服务。
   - [ ] Substep 5.2 Verify: 使用 agent-browser CLI 与 Chrome DevTools MCP 在常见桌面分辨率截图对比。
@@ -223,6 +223,7 @@ Flow:
 - `src/components/PullRequestCard.tsx` - 重写为原型卡片字段、作者徽标、状态徽标、相对活跃时间，移除更新时间和本次刷新字段。
 - `src/components/KanbanPage.tsx` - 调整 board 外壳间距，移除传入卡片的刷新时间。
 - `app/page.test.tsx` - 覆盖列顺序、列计数、空列文案、列视觉映射、卡片字段和功能裁剪。
+- Step 4 本地验证命令：`pnpm dev --hostname 127.0.0.1 --port 3000` 启动 app；`python3 -m http.server 3001 --bind 127.0.0.1 --directory prototype` 启动原型静态服务。
 
 ### Verification
 
@@ -234,3 +235,6 @@ Flow:
 - `pnpm test -- app/page.test.tsx` - passed：32 tests / 6 files。
 - `pnpm typecheck` - passed。
 - `pnpm lint` - passed。
+- `agent-browser` 1440x1200 截图：`app-1440x1200.png` 与 `prototype-1440x1200.png` captured；本轮对比通过，未发现需要修改的结构、token、圆角、边框、卡片信息密度差异。
+- Chrome DevTools MCP computed styles 复核：body/header/main/board/column header/card/PR number/status 的背景、padding、gap、border、radius、font size、line height 与原型一致；实际 app 由于真实数据产生纵向滚动条，列宽相对静态原型缩小约 3px，属于数据量差异。
+- `pnpm lint && pnpm typecheck && pnpm test && pnpm build` - passed：32 tests / 6 files，production build successful。
