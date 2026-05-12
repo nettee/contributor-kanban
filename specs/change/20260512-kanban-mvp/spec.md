@@ -251,11 +251,11 @@ type ErrorResponse = {
   - [x] Substep 2.2 Implement: 实现低并发请求队列和 org membership 缓存。
   - [x] Substep 2.3 Implement: 实现 open PR、详情、reviews、commits、comments、checks/statuses 数据读取函数。
   - [x] Substep 2.4 Verify: 用 mocked fetch 覆盖分页、304、rate limit、队列顺序、membership 404。
-- [ ] Step 3: 实现看板聚合 API
-  - [ ] Substep 3.1 Implement: 定义看板 DTO、列常量和 TypeScript 类型。
-  - [ ] Substep 3.2 Implement: 实现 `activityAt`、internal/external、detailStatus 构建逻辑。
-  - [ ] Substep 3.3 Implement: 实现 A/B/C/D/E 分类器和 `/api/kanban` route。
-  - [ ] Substep 3.4 Verify: 覆盖分类优先级、排序、配置缺失、GitHub 失败和成功响应测试。
+- [x] Step 3: 实现看板聚合 API
+  - [x] Substep 3.1 Implement: 定义看板 DTO、列常量和 TypeScript 类型。
+  - [x] Substep 3.2 Implement: 实现 `activityAt`、internal/external、detailStatus 构建逻辑。
+  - [x] Substep 3.3 Implement: 实现 A/B/C/D/E 分类器和 `/api/kanban` route。
+  - [x] Substep 3.4 Verify: 覆盖分类优先级、排序、配置缺失、GitHub 失败和成功响应测试。
 - [ ] Step 4: 实现单页看板 UI
   - [ ] Substep 4.1 Implement: 实现过滤器、刷新间隔选择和立即刷新按钮。
   - [ ] Substep 4.2 Implement: 实现五列看板、PR 卡片、两行标题截断、内部/外部标记、相对时间。
@@ -284,6 +284,12 @@ type ErrorResponse = {
 - `src/github/queue.ts` - 新增 fail-fast 的低并发 FIFO 请求队列，非法并发值直接抛错，请求失败原样传播。
 - `src/github/client.ts` - 新增 GitHub REST client，统一请求头、分页、ETag/Last-Modified 内存缓存、304 命中回包、非 2xx / rate limit 错误封装和 org membership 缓存。
 - `src/github/client.test.ts` - 新增 mocked fetch 测试，覆盖分页、304 命中缓存、304 缺缓存报错、非 2xx、rate limit retryAt、队列顺序、membership 404 与缓存。
+- `src/kanban/types.ts` - 新增看板列常量、DTO 类型、卡片类型和错误响应类型。
+- `src/kanban/classifier.ts` - 新增 A/B/C/D/E 分类器，按 Draft、不可合并、CHANGE_REQUESTED、可合并、处理中优先级返回列和 detailStatus。
+- `src/kanban/build-board.ts` - 新增 GitHub 数据聚合到看板 DTO 的构建逻辑，计算 internal/external、activityAt 并按列内 activityAt 倒序排序。
+- `app/api/kanban/route.ts` - 新增 `/api/kanban` route，校验服务端配置、创建 GitHub client、返回看板响应，并显式返回配置错误和 GitHub API 错误。
+- `src/kanban/classifier.test.ts` / `src/kanban/build-board.test.ts` / `app/api/kanban/route.test.ts` - 覆盖分类优先级、卡片构建排序、配置缺失、GitHub 失败和成功响应。
+- `vitest.config.ts` - 新增 `@` 路径别名配置，保证 route 和源文件在测试环境可解析。
 
 ### Verification
 
@@ -293,5 +299,8 @@ type ErrorResponse = {
 - `npm test` - passed，2 个测试文件、5 个测试。
 - `npm run build` - passed。
 - `npm test` - passed，3 个测试文件、12 个测试；覆盖 GitHub 数据层分页、304 缓存、rate limit、队列顺序和 membership 404/caching。
+- `npm run typecheck` - passed。
+- `npm run lint` - passed。
+- `npm test` - passed，6 个测试文件、21 个测试；覆盖 Step 3 分类器、看板 DTO 构建和 API route 错误/成功响应。
 - `npm run typecheck` - passed。
 - `npm run lint` - passed。
