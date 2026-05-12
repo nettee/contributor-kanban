@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --bg: #f6f9fc;
+  --surface: #ffffff;
+  --fg: #061b31;
+  --muted: #64748d;
+  --label: #273951;
+  --border: #e5edf5;
+  --accent: #533afd;
+  --accent-hover: #4434d4;
+  --brand-dark: #1c1e54;
+  --success: #15be53;
+  --success-text: #108c3d;
+  --success-bg: rgba(21, 190, 83, 0.12);
+  --success-border: rgba(21, 190, 83, 0.3);
+  --danger: #ea2261;
+  --danger-bg: rgba(234, 34, 97, 0.1);
+  --danger-border: rgba(234, 34, 97, 0.25);
+  --warning: #9b6829;
+  --warning-bg: rgba(155, 104, 41, 0.1);
+  --warning-border: rgba(155, 104, 41, 0.25);
+  --purple-light: #f0eeff;
+  --purple-border: #d6d9fc;
+  --shadow-blue: rgba(50, 50, 93, 0.25);
+  --shadow-black: rgba(0, 0, 0, 0.08);
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+
+html {
+  background: var(--bg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-feature-settings: "ss01";
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--purple-light);
+  color: var(--accent);
+}
