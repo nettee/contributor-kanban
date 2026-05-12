@@ -256,11 +256,11 @@ type ErrorResponse = {
   - [x] Substep 3.2 Implement: 实现 `activityAt`、internal/external、detailStatus 构建逻辑。
   - [x] Substep 3.3 Implement: 实现 A/B/C/D/E 分类器和 `/api/kanban` route。
   - [x] Substep 3.4 Verify: 覆盖分类优先级、排序、配置缺失、GitHub 失败和成功响应测试。
-- [ ] Step 4: 实现单页看板 UI
-  - [ ] Substep 4.1 Implement: 实现过滤器、刷新间隔选择和立即刷新按钮。
-  - [ ] Substep 4.2 Implement: 实现五列看板、PR 卡片、两行标题截断、内部/外部标记、相对时间。
-  - [ ] Substep 4.3 Implement: 实现加载、刷新中、上次刷新时间和错误状态。
-  - [ ] Substep 4.4 Verify: 覆盖过滤、刷新、错误展示、卡片字段渲染的组件测试。
+- [x] Step 4: 实现单页看板 UI
+  - [x] Substep 4.1 Implement: 实现过滤器、刷新间隔选择和立即刷新按钮。
+  - [x] Substep 4.2 Implement: 实现五列看板、PR 卡片、两行标题截断、内部/外部标记、相对时间。
+  - [x] Substep 4.3 Implement: 实现加载、刷新中、上次刷新时间和错误状态。
+  - [x] Substep 4.4 Verify: 覆盖过滤、刷新、错误展示、卡片字段渲染的组件测试。
 - [ ] Step 5: 集成验证与稳定化
   - [ ] Substep 5.1 Implement: 添加 `.env.example` 和 README 本地运行说明，避免提交真实 `.env` token。
   - [ ] Substep 5.2 Verify: 运行 lint/typecheck/test/build。
@@ -290,10 +290,21 @@ type ErrorResponse = {
 - `app/api/kanban/route.ts` - 新增 `/api/kanban` route，校验服务端配置、创建 GitHub client、返回看板响应，并显式返回配置错误和 GitHub API 错误。
 - `src/kanban/classifier.test.ts` / `src/kanban/build-board.test.ts` / `app/api/kanban/route.test.ts` - 覆盖分类优先级、卡片构建排序、配置缺失、GitHub 失败和成功响应。
 - `vitest.config.ts` - 新增 `@` 路径别名配置，保证 route 和源文件在测试环境可解析。
+- `app/page.tsx` - 改为渲染客户端看板页面组件。
+- `src/components/KanbanPage.tsx` - 新增单页看板状态管理，读取 `/api/kanban`，支持贡献者过滤、刷新间隔、立即刷新、自动轮询、加载/刷新中和错误状态。
+- `src/components/FilterControls.tsx` - 新增内部/外部/全部过滤器、5/10/30/60 分钟刷新间隔选择和立即刷新按钮。
+- `src/components/KanbanBoard.tsx` / `src/components/PullRequestCard.tsx` - 新增五列看板与 PR 卡片，展示编号、作者、内部/外部标记、两行标题截断、细节状态和相对时间。
+- `src/components/RefreshStatus.tsx` - 新增上次刷新、刷新中、rate limit 与 API 错误展示。
+- `src/time.ts` - 新增中文相对时间格式化工具。
+- `app/page.test.tsx` - 更新组件测试，mock `/api/kanban` 响应，覆盖初始加载、卡片字段、过滤切换、立即刷新、错误展示和刷新间隔自动轮询。
+- `app/globals.css` - 补充页面字体渲染和选择框暗色主题样式。
 
 ### Verification
 
 <!-- How the feature was verified: tests written, manual testing steps, results -->
+- `npm run lint` - passed。
+- `npm test` - passed，6 个测试文件、26 个测试；覆盖 Step 4 单页 UI 加载、字段渲染、过滤、刷新、错误状态和刷新间隔。
+- `npm run typecheck` - passed。
 - `npm run lint` - passed。
 - `npm run typecheck` - passed。
 - `npm test` - passed，2 个测试文件、5 个测试。

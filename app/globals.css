@@ -4,9 +4,30 @@
 
 :root {
   color-scheme: dark;
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-body: "Avenir Next", "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 34%),
+    radial-gradient(circle at top right, rgba(196, 181, 253, 0.16), transparent 30%),
+    linear-gradient(180deg, #020617 0%, #0f172a 56%, #111827 100%);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background: #020617;
+  min-height: 100vh;
+  background: transparent;
+  color: #e2e8f0;
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.35);
+  color: #f8fafc;
 }
