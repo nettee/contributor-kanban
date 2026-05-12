@@ -246,11 +246,11 @@ type ErrorResponse = {
   - [x] Substep 1.2 Implement: 配置 Vitest/Testing Library 与基础测试命令。
   - [x] Substep 1.3 Implement: 创建 `src/config.ts` 并实现服务端 env 校验。
   - [x] Substep 1.4 Verify: 运行 lint/typecheck/test，确认空应用和 env 校验测试通过。
-- [ ] Step 2: 实现 GitHub 数据层
-  - [ ] Substep 2.1 Implement: 实现 REST client、分页、ETag 缓存、非 2xx 错误和 rate limit 错误。
-  - [ ] Substep 2.2 Implement: 实现低并发请求队列和 org membership 缓存。
-  - [ ] Substep 2.3 Implement: 实现 open PR、详情、reviews、commits、comments、checks/statuses 数据读取函数。
-  - [ ] Substep 2.4 Verify: 用 mocked fetch 覆盖分页、304、rate limit、队列顺序、membership 404。
+- [x] Step 2: 实现 GitHub 数据层
+  - [x] Substep 2.1 Implement: 实现 REST client、分页、ETag 缓存、非 2xx 错误和 rate limit 错误。
+  - [x] Substep 2.2 Implement: 实现低并发请求队列和 org membership 缓存。
+  - [x] Substep 2.3 Implement: 实现 open PR、详情、reviews、commits、comments、checks/statuses 数据读取函数。
+  - [x] Substep 2.4 Verify: 用 mocked fetch 覆盖分页、304、rate limit、队列顺序、membership 404。
 - [ ] Step 3: 实现看板聚合 API
   - [ ] Substep 3.1 Implement: 定义看板 DTO、列常量和 TypeScript 类型。
   - [ ] Substep 3.2 Implement: 实现 `activityAt`、internal/external、detailStatus 构建逻辑。
@@ -280,6 +280,10 @@ type ErrorResponse = {
 - `next.config.ts` / `tsconfig.json` / `postcss.config.mjs` / `tailwind.config.ts` / `eslint.config.mjs` / `vitest.config.ts` / `vitest.setup.ts` - 新增框架、样式、Lint 和测试配置。
 - `src/config.ts` - 新增服务端 GitHub env 校验，缺失必填配置或非法并发值时抛出 `ConfigError`。
 - `src/config.test.ts` / `app/page.test.tsx` - 覆盖 env 校验和初始化页面渲染。
+- `src/github/types.ts` - 新增 GitHub REST 最小响应类型，覆盖 PR、reviews、commits、comments、check runs、statuses、membership 和 rate limit 元信息。
+- `src/github/queue.ts` - 新增 fail-fast 的低并发 FIFO 请求队列，非法并发值直接抛错，请求失败原样传播。
+- `src/github/client.ts` - 新增 GitHub REST client，统一请求头、分页、ETag/Last-Modified 内存缓存、304 命中回包、非 2xx / rate limit 错误封装和 org membership 缓存。
+- `src/github/client.test.ts` - 新增 mocked fetch 测试，覆盖分页、304 命中缓存、304 缺缓存报错、非 2xx、rate limit retryAt、队列顺序、membership 404 与缓存。
 
 ### Verification
 
@@ -288,3 +292,6 @@ type ErrorResponse = {
 - `npm run typecheck` - passed。
 - `npm test` - passed，2 个测试文件、5 个测试。
 - `npm run build` - passed。
+- `npm test` - passed，3 个测试文件、12 个测试；覆盖 GitHub 数据层分页、304 缓存、rate limit、队列顺序和 membership 404/caching。
+- `npm run typecheck` - passed。
+- `npm run lint` - passed。
