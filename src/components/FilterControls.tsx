@@ -9,7 +9,7 @@ const FILTER_OPTIONS: Array<{
   { value: "external", label: "外部" },
 ];
 
-const REFRESH_OPTIONS = [5, 10, 30, 60] as const;
+const REFRESH_OPTIONS = [15, 30, 60] as const;
 
 type FilterControlsProps = {
   filter: ContributorFilter;

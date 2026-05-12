@@ -1,10 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConfigError } from "../../../src/config";
 import { GitHubApiError } from "../../../src/github/client";
 import type { KanbanClient } from "../../../src/kanban/build-board";
+import { clearCache } from "../../../src/server/cache";
 import { createKanbanHandler } from "./handler";
 
 const request = new Request("http://localhost/api/kanban");
+const summaryRequest = new Request("http://localhost/api/kanban?summary=1");
 
 function emptyClient(): KanbanClient {
   return {
@@ -20,6 +22,15 @@ function emptyClient(): KanbanClient {
 }
 
 describe("GET /api/kanban", () => {
+  beforeEach(() => {
+    clearCache();
+  });
+
+  afterEach(() => {
+    clearCache();
+    vi.useRealTimers();
+  });
+
   it("returns configuration errors", async () => {
     const handler = createKanbanHandler({
       getConfig: () => {
@@ -75,5 +86,56 @@ describe("GET /api/kanban", () => {
     expect(response.status).toBe(200);
     expect(body.columns.map((column: { id: string }) => column.id)).toEqual(["A", "B", "C", "D", "E"]);
     expect(body.refreshedAt).toEqual(expect.any(String));
+  });
+
+  it("reuses cached detail responses within the TTL", async () => {
+    vi.useFakeTimers();
+
+    const client = emptyClient();
+    const handler = createKanbanHandler({
+      getConfig: () => ({ githubToken: "t", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      createClient: () => client,
+    });
+
+    const firstResponse = await handler(request);
+    vi.advanceTimersByTime(30_000);
+    const secondResponse = await handler(request);
+
+    expect(client.listOpenPullRequests).toHaveBeenCalledTimes(1);
+    await expect(firstResponse.json()).resolves.toEqual(await secondResponse.json());
+  });
+
+  it("uses separate cache keys for summary and detail responses", async () => {
+    vi.useFakeTimers();
+
+    const client = emptyClient();
+    const handler = createKanbanHandler({
+      getConfig: () => ({ githubToken: "t", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      createClient: () => client,
+    });
+
+    await handler(summaryRequest);
+    await handler(request);
+    await handler(summaryRequest);
+    await handler(request);
+
+    expect(client.listOpenPullRequests).toHaveBeenCalledTimes(2);
+  });
+
+  it("fetches a new response after the cache TTL expires", async () => {
+    vi.useFakeTimers();
+
+    const client = emptyClient();
+    const handler = createKanbanHandler({
+      getConfig: () => ({ githubToken: "t", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      createClient: () => client,
+    });
+
+    const firstResponse = await handler(request);
+    vi.advanceTimersByTime(60_000);
+    const secondResponse = await handler(request);
+
+    expect(client.listOpenPullRequests).toHaveBeenCalledTimes(2);
+    await expect(firstResponse.json()).resolves.not.toEqual(await secondResponse.json());
   });
 });

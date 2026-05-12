@@ -6,7 +6,7 @@ import { KanbanBoard } from "@/src/components/KanbanBoard";
 import { RefreshStatus } from "@/src/components/RefreshStatus";
 import { KANBAN_COLUMNS, type ErrorResponse, type KanbanResponse, type PullRequestCard } from "@/src/kanban/types";
 
-const DEFAULT_REFRESH_MINUTES: (typeof REFRESH_OPTIONS)[number] = 10;
+const DEFAULT_REFRESH_MINUTES: (typeof REFRESH_OPTIONS)[number] = 15;
 
 function matchesFilter(card: PullRequestCard, filter: ContributorFilter): boolean {
   if (filter === "all") {
@@ -43,9 +43,14 @@ export function KanbanPage() {
   const isMountedRef = useRef(false);
   const boardRef = useRef<KanbanResponse | null>(null);
   const requestIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchBoard = useCallback(async (options: { summary?: boolean } = {}) => {
+    abortControllerRef.current?.abort();
+
     const requestId = ++requestIdRef.current;
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     const hasExistingBoard = boardRef.current !== null;
 
     setError(null);
@@ -64,6 +69,7 @@ export function KanbanPage() {
 
       const response = await fetch(`/api/kanban?${searchParams.toString()}`, {
         cache: "no-store",
+        signal: abortController.signal,
       });
       const payload = await readJson(response);
 
@@ -99,6 +105,10 @@ export function KanbanPage() {
         return;
       }
 
+      if (caughtError instanceof DOMException && caughtError.name === "AbortError") {
+        return;
+      }
+
       const message = caughtError instanceof Error ? caughtError.message : "Unknown error";
 
       setError({
@@ -106,6 +116,10 @@ export function KanbanPage() {
         detail: message,
       });
     } finally {
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+      }
+
       if (!isMountedRef.current || requestId !== requestIdRef.current) {
         return;
       }
@@ -125,6 +139,7 @@ export function KanbanPage() {
 
     return () => {
       isMountedRef.current = false;
+      abortControllerRef.current?.abort();
     };
   }, [fetchBoard]);
 

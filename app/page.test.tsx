@@ -170,6 +170,46 @@ describe("HomePage", () => {
     });
   });
 
+  it("aborts the previous in-flight request when refresh now starts a new one", async () => {
+    const firstResponse = deferredResponse();
+    const secondResponse = deferredResponse();
+    const signals: AbortSignal[] = [];
+
+    fetchMock.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+      signals.push(init?.signal as AbortSignal);
+
+      if (signals.length === 1) {
+        return firstResponse.promise;
+      }
+
+      if (signals.length === 2) {
+        return secondResponse.promise;
+      }
+
+      throw new Error(`Unexpected fetch call ${signals.length}`);
+    });
+
+    render(<HomePage />);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(signals[0].aborted).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "立即刷新" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(signals[0].aborted).toBe(true);
+    expect(signals[1].aborted).toBe(false);
+
+    secondResponse.resolve(jsonResponse(boardResponse));
+    expect(await screen.findByText("@alice")).toBeInTheDocument();
+  });
+
   it("shows API error details when the kanban endpoint fails", async () => {
     fetchMock.mockImplementation(() =>
       Promise.resolve(
@@ -206,7 +246,7 @@ describe("HomePage", () => {
 
     const intervalSelect = screen.getByLabelText("刷新间隔") as HTMLSelectElement;
 
-    expect(intervalSelect.value).toBe("10");
+    expect(intervalSelect.value).toBe("15");
 
     fireEvent.change(intervalSelect, { target: { value: "30" } });
 
