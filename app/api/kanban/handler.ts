@@ -73,7 +73,9 @@ export function createKanbanHandler(dependencies: HandlerDependencies = {}) {
 
         if (shouldRefresh) {
           revalidateTag(createKanbanDataCacheTag(isSummaryRequest));
-          const response = await buildKanbanResponseForConfig(config, createClient, isSummaryRequest);
+          const response = isSummaryRequest
+            ? await getDataCachedDefaultKanbanSummaryResponse(cacheScope)
+            : await getDataCachedDefaultKanbanDetailsResponse(cacheScope);
 
           return createKanbanResponse(response, true);
         }
