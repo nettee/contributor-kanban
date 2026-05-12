@@ -10,9 +10,13 @@ export function PullRequestCard({ card, refreshedAt }: PullRequestCardProps) {
   const authorLabel = card.author.isInternal ? "内部" : "外部";
 
   return (
-    <article
-      className="group rounded-[1.6rem] border border-white/10 bg-slate-950/85 p-4 shadow-[0_20px_50px_rgba(2,6,23,0.3)] transition duration-300 hover:-translate-y-1 hover:border-cyan-300/30"
+    <a
+      href={card.url}
+      target="_blank"
+      rel="noreferrer"
+      className="group block rounded-[1.6rem] border border-white/10 bg-slate-950/85 p-4 shadow-[0_20px_50px_rgba(2,6,23,0.3)] transition duration-300 hover:-translate-y-1 hover:border-cyan-300/30 focus:outline-none focus:ring-2 focus:ring-cyan-300/60"
       data-testid={`pr-card-${card.number}`}
+      aria-label={`打开 PR #${card.number}: ${card.title}`}
     >
       <div className="flex items-start justify-between gap-3">
         <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold tracking-[0.25em] text-cyan-100">
@@ -56,6 +60,6 @@ export function PullRequestCard({ card, refreshedAt }: PullRequestCardProps) {
           <dd className="text-right text-slate-200">{refreshedAt ? formatRelativeTime(refreshedAt) : "等待同步"}</dd>
         </div>
       </dl>
-    </article>
+    </a>
   );
 }
