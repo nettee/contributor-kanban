@@ -7,7 +7,7 @@ Next.js 单页看板，用于展示 `nexu-io/open-design` 的 open PR 状态。
 1. 安装依赖：
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. 创建本地环境变量文件：
@@ -31,7 +31,7 @@ Next.js 单页看板，用于展示 `nexu-io/open-design` 的 open PR 状态。
 4. 启动开发服务器：
 
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
 5. 打开 `http://localhost:3000`。
@@ -39,8 +39,8 @@ Next.js 单页看板，用于展示 `nexu-io/open-design` 的 open PR 状态。
 ## 验证命令
 
 ```bash
-npm run lint
-npm run typecheck
-npm test
-npm run build
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
 ```
