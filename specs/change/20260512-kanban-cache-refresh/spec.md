@@ -1,7 +1,7 @@
 ---
 id: 20260512-kanban-cache-refresh
 name: Kanban Cache Refresh
-status: designed
+status: implemented
 created: '2026-05-12'
 ---
 
@@ -21,7 +21,6 @@ created: '2026-05-12'
 - 更新相关 route/client 测试。
 
 开放问题：
-- 浏览器缓存 TTL 是否与后端 1 小时 TTL 保持一致。
 - 手动刷新按钮是否同时刷新 summary 和 details，还是只刷新 details。
 
 ## Research
@@ -42,8 +41,8 @@ created: '2026-05-12'
 - 后端缓存需要继续区分 summary 和 details，避免两种 payload 互相覆盖。Source: `app/api/kanban/handler.ts:67-70`
 
 ### Available Approaches
-- **Option A: 进程内 1 小时缓存 + 浏览器 HTTP 缓存**：沿用现有 `Map` 缓存工具，把 TTL 提升到 1 小时，并为普通响应设置 `Cache-Control`。Source: `src/server/cache.ts:1-32`; `app/api/kanban/handler.ts:9,47-49`
-- **Option B: 外部持久缓存**：使用 Redis/Vercel KV 跨 serverless 实例共享缓存。当前仓库尚未出现相关依赖或配置。Source: `src/server/cache.ts:1-32`; `package.json`
+- **Selected: 进程内 1 小时缓存 + 浏览器 HTTP 缓存**：沿用现有 `Map` 缓存工具，把 TTL 提升到 1 小时，并为普通响应设置 `Cache-Control`。Source: `src/server/cache.ts:1-32`; `app/api/kanban/handler.ts:9,47-49`
+- **Out of scope: 外部持久缓存**：保持方案简单，本次不引入 Redis/Vercel KV 等外部组件。Source: user confirmation on 2026-05-12; `src/server/cache.ts:1-32`
 
 ### Key References
 - `src/components/KanbanPage.tsx:48-130` - 前端获取和状态更新逻辑。
@@ -87,6 +86,7 @@ sequenceDiagram
 
 ### Design Decisions
 - Decision: 将后端 Kanban 缓存 TTL 从 60 秒调整为 1 小时。Source: `app/api/kanban/handler.ts:9`
+- Decision: 后端缓存保持进程内 `Map`，本次不引入外部缓存组件。Source: user confirmation on 2026-05-12; `src/server/cache.ts:1-32`
 - Decision: 普通请求使用稳定查询参数，仅保留 `summary=1` 这类语义参数。Source: `src/components/KanbanPage.tsx:65-72`
 - Decision: 手动刷新使用显式 `refresh=1` 参数，API 收到后跳过缓存读取并在成功拉取后写入缓存。Source: `app/api/kanban/handler.ts:34-47`
 - Decision: API 响应设置普通浏览器缓存 headers，手动刷新响应设置绕过缓存 headers。Source: `app/api/kanban/handler.ts:49`
@@ -127,18 +127,18 @@ Frontend flow:
 
 ## Plan
 
-- [ ] Step 1: 后端缓存语义
-  - [ ] Substep 1.1 Implement: 将 Kanban cache TTL 调整为 1 小时。
-  - [ ] Substep 1.2 Implement: 支持 `refresh=1` 绕过缓存读取并更新缓存。
-  - [ ] Substep 1.3 Implement: 添加普通响应和手动刷新响应的 cache headers。
-  - [ ] Substep 1.4 Verify: 更新 API route 测试覆盖缓存命中、刷新和 headers。
-- [ ] Step 2: 前端请求语义
-  - [ ] Substep 2.1 Implement: 移除普通请求的 `refreshToken=Date.now()` 和默认 `no-store`。
-  - [ ] Substep 2.2 Implement: 将手动刷新入口改为 `refresh=1` + `no-store`。
-  - [ ] Substep 2.3 Verify: 更新页面或组件测试覆盖初始加载和手动刷新请求。
-- [ ] Step 3: 回归验证
-  - [ ] Substep 3.1 Verify: 运行相关单元测试。
-  - [ ] Substep 3.2 Verify: 运行项目测试套件。
+- [x] Step 1: 后端缓存语义
+  - [x] Substep 1.1 Implement: 将 Kanban cache TTL 调整为 1 小时。
+  - [x] Substep 1.2 Implement: 支持 `refresh=1` 绕过缓存读取并更新缓存。
+  - [x] Substep 1.3 Implement: 添加普通响应和手动刷新响应的 cache headers。
+  - [x] Substep 1.4 Verify: 更新 API route 测试覆盖缓存命中、刷新和 headers。
+- [x] Step 2: 前端请求语义
+  - [x] Substep 2.1 Implement: 移除普通请求的 `refreshToken=Date.now()` 和默认 `no-store`。
+  - [x] Substep 2.2 Implement: 将手动刷新入口改为 `refresh=1` + `no-store`。
+  - [x] Substep 2.3 Verify: 更新页面或组件测试覆盖初始加载和手动刷新请求。
+- [x] Step 3: 回归验证
+  - [x] Substep 3.1 Verify: 运行相关单元测试。
+  - [x] Substep 3.2 Verify: 运行项目测试套件。
 
 ## Notes
 
@@ -146,8 +146,13 @@ Frontend flow:
 
 ### Implementation
 
-<!-- Files created/modified, decisions made during coding, deviations from design -->
+- `app/api/kanban/handler.ts` - 后端缓存 TTL 调整为 1 小时；普通请求读取进程内缓存；`refresh=1` 绕过缓存读取并更新缓存；响应增加 `Cache-Control`。
+- `src/components/KanbanPage.tsx` - 普通请求使用稳定 URL 和浏览器默认缓存；手动刷新使用 `refresh=1` 和 `cache: "no-store"`。
+- `app/api/kanban/route.test.ts` - 覆盖 1 小时 TTL、响应 headers、手动刷新替换缓存。
+- `app/page.test.tsx` - 覆盖初始请求 URL/cache 选项和手动刷新请求。
+- `specs/change/20260512-kanban-cache-refresh/spec.md` - 记录 keep simple 决策：保持进程内缓存，不引入外部组件。
 
 ### Verification
 
-<!-- How the feature was verified: tests written, manual testing steps, results -->
+- `pnpm test` - passed，43 tests。
+- `pnpm typecheck` - passed。

@@ -45,7 +45,7 @@ export function KanbanPage() {
   const requestIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const fetchBoard = useCallback(async (options: { summary?: boolean } = {}) => {
+  const fetchBoard = useCallback(async (options: { summary?: boolean; refresh?: boolean } = {}) => {
     abortControllerRef.current?.abort();
 
     const requestId = ++requestIdRef.current;
@@ -62,13 +62,18 @@ export function KanbanPage() {
     }
 
     try {
-      const searchParams = new URLSearchParams({ refreshToken: String(Date.now()) });
+      const searchParams = new URLSearchParams();
       if (options.summary) {
         searchParams.set("summary", "1");
       }
+      if (options.refresh) {
+        searchParams.set("refresh", "1");
+      }
 
-      const response = await fetch(`/api/kanban?${searchParams.toString()}`, {
-        cache: "no-store",
+      const queryString = searchParams.toString();
+
+      const response = await fetch(`/api/kanban${queryString ? `?${queryString}` : ""}`, {
+        cache: options.refresh ? "no-store" : "default",
         signal: abortController.signal,
       });
       const payload = await readJson(response);
@@ -191,7 +196,7 @@ export function KanbanPage() {
               lastRefreshedAt={board?.refreshedAt}
               error={error}
               onRefreshNow={() => {
-                void fetchBoard();
+                void fetchBoard({ refresh: true });
               }}
             />
           </div>

@@ -6,7 +6,8 @@ import { buildKanbanResponse, buildKanbanSummaryResponse, type KanbanClient } fr
 import type { ErrorResponse, KanbanResponse } from "@/src/kanban/types";
 import { getCached, setCached } from "@/src/server/cache";
 
-const KANBAN_CACHE_TTL_MS = 60_000;
+const KANBAN_CACHE_TTL_MS = 60 * 60_000;
+const BROWSER_CACHE_SECONDS = KANBAN_CACHE_TTL_MS / 1000;
 
 let defaultAuthCache:
   | {
@@ -31,12 +32,14 @@ export function createKanbanHandler(dependencies: HandlerDependencies = {}) {
         getDefaultAuth(config);
       }
 
-      const isSummaryRequest = new URL(request.url).searchParams.get("summary") === "1";
+      const searchParams = new URL(request.url).searchParams;
+      const isSummaryRequest = searchParams.get("summary") === "1";
+      const shouldRefresh = searchParams.get("refresh") === "1";
       const cacheKey = createKanbanCacheKey(config, isSummaryRequest);
-      const cached = getCached<KanbanResponse>(cacheKey);
+      const cached = shouldRefresh ? undefined : getCached<KanbanResponse>(cacheKey);
 
       if (cached) {
-        return NextResponse.json(cached);
+        return createKanbanResponse(cached, false);
       }
 
       const client = await createClient(config);
@@ -46,7 +49,7 @@ export function createKanbanHandler(dependencies: HandlerDependencies = {}) {
         : await buildKanbanResponse(client, repository);
       setCached(cacheKey, response, KANBAN_CACHE_TTL_MS);
 
-      return NextResponse.json(response);
+      return createKanbanResponse(response, shouldRefresh);
     } catch (error) {
       if (error instanceof ConfigError) {
         return NextResponse.json({ error: "Configuration error", detail: error.message }, { status: 500 });
@@ -62,6 +65,14 @@ export function createKanbanHandler(dependencies: HandlerDependencies = {}) {
       throw error;
     }
   };
+}
+
+function createKanbanResponse(response: KanbanResponse, shouldRefresh: boolean): NextResponse<KanbanResponse> {
+  return NextResponse.json(response, {
+    headers: {
+      "Cache-Control": shouldRefresh ? "no-store" : `private, max-age=${BROWSER_CACHE_SECONDS}`,
+    },
+  });
 }
 
 function createKanbanCacheKey(config: ServerConfig, isSummaryRequest: boolean): string {

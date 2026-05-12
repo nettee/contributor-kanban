@@ -7,6 +7,7 @@ import { createKanbanHandler } from "./handler";
 
 const request = new Request("http://localhost/api/kanban");
 const summaryRequest = new Request("http://localhost/api/kanban?summary=1");
+const refreshRequest = new Request("http://localhost/api/kanban?refresh=1");
 
 function emptyClient(): KanbanClient {
   return {
@@ -84,6 +85,7 @@ describe("GET /api/kanban", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("private, max-age=3600");
     expect(body.repository).toBe("o/r");
     expect(body.columns.map((column: { id: string }) => column.id)).toEqual(["A", "B", "C", "D", "E"]);
     expect(body.refreshedAt).toEqual(expect.any(String));
@@ -133,11 +135,31 @@ describe("GET /api/kanban", () => {
     });
 
     const firstResponse = await handler(request);
-    vi.advanceTimersByTime(60_000);
+    vi.advanceTimersByTime(60 * 60_000);
     const secondResponse = await handler(request);
 
     expect(client.listOpenPullRequests).toHaveBeenCalledTimes(2);
     await expect(firstResponse.json()).resolves.not.toEqual(await secondResponse.json());
+  });
+
+  it("refreshes and replaces cached detail responses when requested", async () => {
+    vi.useFakeTimers();
+
+    const client = emptyClient();
+    const handler = createKanbanHandler({
+      getConfig: () => ({ githubAppId: "1", githubAppInstallationId: "2", githubAppPrivateKeyBase64: "a2V5", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      createClient: () => client,
+    });
+
+    const firstResponse = await handler(request);
+    vi.advanceTimersByTime(30_000);
+    const refreshResponse = await handler(refreshRequest);
+    const cachedAfterRefreshResponse = await handler(request);
+
+    expect(client.listOpenPullRequests).toHaveBeenCalledTimes(2);
+    expect(refreshResponse.headers.get("Cache-Control")).toBe("no-store");
+    await expect(refreshResponse.json()).resolves.toEqual(await cachedAfterRefreshResponse.json());
+    await expect(firstResponse.json()).resolves.not.toEqual(await handler(request).then((response) => response.json()));
   });
 
   it("awaits async client factories", async () => {
