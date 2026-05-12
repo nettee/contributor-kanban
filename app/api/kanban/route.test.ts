@@ -42,7 +42,12 @@ describe("GET /api/kanban", () => {
       createClient: () => ({
         ...emptyClient(),
         listOpenPullRequests: vi.fn().mockRejectedValue(
-          new GitHubApiError({ status: 429, message: "rate limited", retryAt: "2026-05-12T10:02:00.000Z" }),
+          new GitHubApiError({
+            status: 429,
+            message: "rate limited",
+            retryAt: "2026-05-12T10:02:00.000Z",
+            rateLimit: { limit: 5000, remaining: 0, resetAt: "2026-05-12T10:10:00.000Z" },
+          }),
         ),
       }),
     });
@@ -54,6 +59,7 @@ describe("GET /api/kanban", () => {
       error: "GitHub API error",
       detail: "rate limited",
       retryAt: "2026-05-12T10:02:00.000Z",
+      rateLimit: { limit: 5000, remaining: 0, resetAt: "2026-05-12T10:10:00.000Z" },
     });
   });
 

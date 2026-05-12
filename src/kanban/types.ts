@@ -35,4 +35,5 @@ export type ErrorResponse = {
   error: string;
   detail?: string;
   retryAt?: string;
+  rateLimit?: { limit?: number; remaining?: number; resetAt?: string };
 };

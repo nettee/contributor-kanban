@@ -27,7 +27,7 @@ export function createKanbanHandler(dependencies: HandlerDependencies = {}) {
 
       if (error instanceof GitHubApiError) {
         return NextResponse.json(
-          { error: "GitHub API error", detail: error.message, retryAt: error.retryAt },
+          { error: "GitHub API error", detail: error.message, retryAt: error.retryAt, rateLimit: error.rateLimit },
           { status: error.status === 504 ? 504 : 502 },
         );
       }
