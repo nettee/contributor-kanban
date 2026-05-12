@@ -143,6 +143,27 @@ describe("HomePage", () => {
     expect(screen.getByRole("heading", { name: /Draft onboarding refresh/ })).toBeInTheDocument();
   });
 
+  it("uses stable URLs and browser cache for initial kanban requests", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse(boardResponse)));
+
+    render(<HomePage />);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "/api/kanban?summary=1",
+      expect.objectContaining({ cache: "default", signal: expect.any(AbortSignal) }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/kanban",
+      expect.objectContaining({ cache: "default", signal: expect.any(AbortSignal) }),
+    );
+  });
+
   it("renders prototype board columns, counts, empty text, and visual mappings", async () => {
     fetchMock.mockImplementation(() => Promise.resolve(jsonResponse(boardResponse)));
 
@@ -205,6 +226,11 @@ describe("HomePage", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(3);
     });
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "/api/kanban?refresh=1",
+      expect.objectContaining({ cache: "no-store", signal: expect.any(AbortSignal) }),
+    );
   });
 
   it("aborts the previous in-flight request when refresh now starts a new one", async () => {
