@@ -34,7 +34,7 @@ describe("GET /api/kanban", () => {
   it("returns configuration errors", async () => {
     const handler = createKanbanHandler({
       getConfig: () => {
-        throw new ConfigError("Missing required environment variable: GITHUB_TOKEN");
+        throw new ConfigError("Missing required environment variable: GITHUB_APP_ID");
       },
     });
 
@@ -43,13 +43,13 @@ describe("GET /api/kanban", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "Configuration error",
-      detail: "Missing required environment variable: GITHUB_TOKEN",
+      detail: "Missing required environment variable: GITHUB_APP_ID",
     });
   });
 
   it("returns GitHub API failures", async () => {
     const handler = createKanbanHandler({
-      getConfig: () => ({ githubToken: "t", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      getConfig: () => ({ githubAppId: "1", githubAppInstallationId: "2", githubAppPrivateKeyBase64: "a2V5", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
       createClient: () => ({
         ...emptyClient(),
         listOpenPullRequests: vi.fn().mockRejectedValue(
@@ -76,7 +76,7 @@ describe("GET /api/kanban", () => {
 
   it("returns successful board responses", async () => {
     const handler = createKanbanHandler({
-      getConfig: () => ({ githubToken: "t", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      getConfig: () => ({ githubAppId: "1", githubAppInstallationId: "2", githubAppPrivateKeyBase64: "a2V5", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
       createClient: emptyClient,
     });
 
@@ -94,7 +94,7 @@ describe("GET /api/kanban", () => {
 
     const client = emptyClient();
     const handler = createKanbanHandler({
-      getConfig: () => ({ githubToken: "t", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      getConfig: () => ({ githubAppId: "1", githubAppInstallationId: "2", githubAppPrivateKeyBase64: "a2V5", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
       createClient: () => client,
     });
 
@@ -111,7 +111,7 @@ describe("GET /api/kanban", () => {
 
     const client = emptyClient();
     const handler = createKanbanHandler({
-      getConfig: () => ({ githubToken: "t", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      getConfig: () => ({ githubAppId: "1", githubAppInstallationId: "2", githubAppPrivateKeyBase64: "a2V5", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
       createClient: () => client,
     });
 
@@ -128,7 +128,7 @@ describe("GET /api/kanban", () => {
 
     const client = emptyClient();
     const handler = createKanbanHandler({
-      getConfig: () => ({ githubToken: "t", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      getConfig: () => ({ githubAppId: "1", githubAppInstallationId: "2", githubAppPrivateKeyBase64: "a2V5", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
       createClient: () => client,
     });
 
@@ -138,5 +138,18 @@ describe("GET /api/kanban", () => {
 
     expect(client.listOpenPullRequests).toHaveBeenCalledTimes(2);
     await expect(firstResponse.json()).resolves.not.toEqual(await secondResponse.json());
+  });
+
+  it("awaits async client factories", async () => {
+    const client = emptyClient();
+    const handler = createKanbanHandler({
+      getConfig: () => ({ githubAppId: "1", githubAppInstallationId: "2", githubAppPrivateKeyBase64: "a2V5", githubOwner: "o", githubRepo: "r", githubOrg: "org", githubRequestConcurrency: 1 }),
+      createClient: async () => client,
+    });
+
+    const response = await handler(request);
+
+    expect(response.status).toBe(200);
+    expect(client.listOpenPullRequests).toHaveBeenCalledTimes(1);
   });
 });

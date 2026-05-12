@@ -1,5 +1,7 @@
 export type ServerConfig = {
-  githubToken: string;
+  githubAppId: string;
+  githubAppInstallationId: string;
+  githubAppPrivateKeyBase64: string;
   githubOwner: string;
   githubRepo: string;
   githubOrg: string;
@@ -14,13 +16,29 @@ export class ConfigError extends Error {
 }
 
 type Env = Partial<Record<string, string | undefined>>;
-type RequiredEnvKey = "GITHUB_TOKEN" | "GITHUB_OWNER" | "GITHUB_REPO" | "GITHUB_ORG";
+type RequiredEnvKey =
+  | "GITHUB_APP_ID"
+  | "GITHUB_APP_INSTALLATION_ID"
+  | "GITHUB_APP_PRIVATE_KEY_BASE64"
+  | "GITHUB_OWNER"
+  | "GITHUB_REPO"
+  | "GITHUB_ORG";
 
 function readRequiredEnv(env: Env, key: RequiredEnvKey): string {
   const value = env[key]?.trim();
 
   if (!value) {
     throw new ConfigError(`Missing required environment variable: ${key}`);
+  }
+
+  return value;
+}
+
+function readPositiveIntegerEnv(env: Env, key: "GITHUB_APP_ID" | "GITHUB_APP_INSTALLATION_ID"): string {
+  const value = readRequiredEnv(env, key);
+
+  if (!/^\d+$/.test(value) || Number(value) < 1) {
+    throw new ConfigError(`${key} must be a positive integer`);
   }
 
   return value;
@@ -44,7 +62,9 @@ function readConcurrency(env: Env): number {
 
 export function getServerConfig(env: Env = process.env): ServerConfig {
   return {
-    githubToken: readRequiredEnv(env, "GITHUB_TOKEN"),
+    githubAppId: readPositiveIntegerEnv(env, "GITHUB_APP_ID"),
+    githubAppInstallationId: readPositiveIntegerEnv(env, "GITHUB_APP_INSTALLATION_ID"),
+    githubAppPrivateKeyBase64: readRequiredEnv(env, "GITHUB_APP_PRIVATE_KEY_BASE64"),
     githubOwner: readRequiredEnv(env, "GITHUB_OWNER"),
     githubRepo: readRequiredEnv(env, "GITHUB_REPO"),
     githubOrg: readRequiredEnv(env, "GITHUB_ORG"),

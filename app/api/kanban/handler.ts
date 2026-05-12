@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ConfigError, getServerConfig, type ServerConfig } from "@/src/config";
+import { GitHubAppAuth } from "@/src/github/app-auth";
 import { GitHubApiError, GitHubRestClient } from "@/src/github/client";
 import { buildKanbanResponse, buildKanbanSummaryResponse, type KanbanClient } from "@/src/kanban/build-board";
 import type { ErrorResponse, KanbanResponse } from "@/src/kanban/types";
@@ -7,9 +8,16 @@ import { getCached, setCached } from "@/src/server/cache";
 
 const KANBAN_CACHE_TTL_MS = 60_000;
 
+let defaultAuthCache:
+  | {
+      key: string;
+      auth: GitHubAppAuth;
+    }
+  | undefined;
+
 type HandlerDependencies = {
   getConfig?: () => ServerConfig;
-  createClient?: (config: ServerConfig) => KanbanClient;
+  createClient?: (config: ServerConfig) => KanbanClient | Promise<KanbanClient>;
 };
 
 export function createKanbanHandler(dependencies: HandlerDependencies = {}) {
@@ -19,7 +27,10 @@ export function createKanbanHandler(dependencies: HandlerDependencies = {}) {
   return async function GET(request: Request): Promise<NextResponse<KanbanResponse | ErrorResponse>> {
     try {
       const config = readConfig();
-      const client = createClient(config);
+      if (!dependencies.createClient) {
+        getDefaultAuth(config);
+      }
+
       const isSummaryRequest = new URL(request.url).searchParams.get("summary") === "1";
       const cacheKey = createKanbanCacheKey(config, isSummaryRequest);
       const cached = getCached<KanbanResponse>(cacheKey);
@@ -28,6 +39,7 @@ export function createKanbanHandler(dependencies: HandlerDependencies = {}) {
         return NextResponse.json(cached);
       }
 
+      const client = await createClient(config);
       const repository = `${config.githubOwner}/${config.githubRepo}`;
       const response = isSummaryRequest
         ? await buildKanbanSummaryResponse(client, repository)
@@ -57,12 +69,30 @@ function createKanbanCacheKey(config: ServerConfig, isSummaryRequest: boolean): 
   return `kanban:${config.githubOwner}/${config.githubRepo}:${mode}`;
 }
 
-function createDefaultClient(config: ServerConfig): KanbanClient {
+async function createDefaultClient(config: ServerConfig): Promise<KanbanClient> {
+  const token = await getDefaultAuth(config).getInstallationToken();
+
   return new GitHubRestClient({
-    token: config.githubToken,
+    token,
     owner: config.githubOwner,
     repo: config.githubRepo,
     org: config.githubOrg,
     concurrency: config.githubRequestConcurrency,
   });
+}
+
+function getDefaultAuth(config: ServerConfig): GitHubAppAuth {
+  const key = `${config.githubAppId}:${config.githubAppInstallationId}`;
+
+  if (defaultAuthCache?.key === key) {
+    return defaultAuthCache.auth;
+  }
+
+  const auth = new GitHubAppAuth({
+    appId: config.githubAppId,
+    installationId: config.githubAppInstallationId,
+    privateKeyBase64: config.githubAppPrivateKeyBase64,
+  });
+  defaultAuthCache = { key, auth };
+  return auth;
 }
