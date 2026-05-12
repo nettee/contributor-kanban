@@ -181,11 +181,11 @@ Flow:
   - [x] Substep 2.2 Implement: 将刷新间隔改为 `15m/30m/60m` segmented control，并设置默认 `30m`。
   - [x] Substep 2.3 Implement: 将刷新时间与手动刷新按钮放入 header，错误态保留清晰反馈。
   - [x] Substep 2.4 Verify: 测试筛选、刷新间隔、手动刷新、错误态。
-- [ ] Step 3: Board 与 Card 视觉还原
-  - [ ] Substep 3.1 Implement: 重写 `KanbanBoard` 为原型 5 列浅色布局、dot、title、count、横向滚动断点。
-  - [ ] Substep 3.2 Implement: 重写 `PullRequestCard` 为原型字段和状态徽标，裁掉更新时间、本次刷新等字段。
-  - [ ] Substep 3.3 Implement: 增加 `A-E` 到原型列 class/status style 的前端映射。
-  - [ ] Substep 3.4 Verify: 测试列顺序、列计数、卡片字段、空列文案、功能裁剪。
+- [x] Step 3: Board 与 Card 视觉还原
+  - [x] Substep 3.1 Implement: 重写 `KanbanBoard` 为原型 5 列浅色布局、dot、title、count、横向滚动断点。
+  - [x] Substep 3.2 Implement: 重写 `PullRequestCard` 为原型字段和状态徽标，裁掉更新时间、本次刷新等字段。
+  - [x] Substep 3.3 Implement: 增加 `A-E` 到原型列 class/status style 的前端映射。
+  - [x] Substep 3.4 Verify: 测试列顺序、列计数、卡片字段、空列文案、功能裁剪。
 - [ ] Step 4: 截图验证与最终稳定
   - [ ] Substep 4.1 Implement: 记录本地验证命令，分别启动 app 服务和 prototype 静态服务。
   - [ ] Substep 4.2 Verify: 使用 agent-browser CLI 与 Chrome DevTools MCP 在常见桌面分辨率截图对比。
@@ -219,6 +219,10 @@ Flow:
 - `src/components/RefreshStatus.tsx` - 将刷新时间与手动刷新按钮收敛到 header inline 控件，保留错误 alert。
 - `src/components/KanbanPage.tsx` - Header 右侧组合为贡献者、刷新间隔、刷新状态和刷新按钮，默认刷新间隔改为 30 分钟。
 - `app/page.test.tsx` - 覆盖 segmented control 默认态、刷新间隔切换、手动刷新和错误态。
+- `src/components/KanbanBoard.tsx` - 重写为原型 5 列浅色布局，加入 `A-E` 到 `col-draft/col-blocked/col-changes/col-progress/col-ready` 的映射、dot、计数和横向滚动断点。
+- `src/components/PullRequestCard.tsx` - 重写为原型卡片字段、作者徽标、状态徽标、相对活跃时间，移除更新时间和本次刷新字段。
+- `src/components/KanbanPage.tsx` - 调整 board 外壳间距，移除传入卡片的刷新时间。
+- `app/page.test.tsx` - 覆盖列顺序、列计数、空列文案、列视觉映射、卡片字段和功能裁剪。
 
 ### Verification
 
@@ -227,3 +231,6 @@ Flow:
 - `pnpm typecheck` - passed。
 - `pnpm test -- app/page.test.tsx` - passed：31 tests / 6 files。
 - `pnpm typecheck` - passed。
+- `pnpm test -- app/page.test.tsx` - passed：32 tests / 6 files。
+- `pnpm typecheck` - passed。
+- `pnpm lint` - passed。

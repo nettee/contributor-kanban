@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { KanbanResponse } from "@/src/kanban/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import HomePage from "./page";
@@ -115,7 +115,7 @@ describe("HomePage", () => {
 
     deferred.resolve(jsonResponse(boardResponse));
 
-    expect(await screen.findByText("@alice")).toBeInTheDocument();
+    expect(await screen.findByText("alice")).toBeInTheDocument();
   });
 
   it("renders card fields from the initial API payload", async () => {
@@ -129,15 +129,45 @@ describe("HomePage", () => {
     expect(screen.queryByText("当前视图")).toBeNull();
     expect(screen.queryByText("全部 PR")).toBeNull();
     expect(screen.queryByText(/在单页里追踪所有 open PR/)).toBeNull();
-    expect(await screen.findByText("@alice")).toBeInTheDocument();
-    expect(screen.getByText("PR #101")).toBeInTheDocument();
+    expect(await screen.findByText("alice")).toBeInTheDocument();
+    expect(screen.getByText("#101")).toBeInTheDocument();
     expect(screen.getAllByText("内部")).not.toHaveLength(0);
     expect(screen.getByText("Draft")).toBeInTheDocument();
-    expect(screen.getAllByText(/活跃于/)).not.toHaveLength(0);
-    expect(screen.getAllByText(/更新于/)).not.toHaveLength(0);
+    expect(within(screen.getByTestId("pr-card-101")).getByText(/[前后]/)).toBeInTheDocument();
+    expect(screen.queryByText(/活跃于/)).toBeNull();
+    expect(screen.queryByText(/更新于/)).toBeNull();
+    expect(screen.queryByText(/本次刷新/)).toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent(/刷新/);
     expect(screen.getByRole("button", { name: "30m" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("heading", { name: /Draft onboarding refresh/ })).toBeInTheDocument();
+  });
+
+  it("renders prototype board columns, counts, empty text, and visual mappings", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse(boardResponse)));
+
+    render(<HomePage />);
+
+    expect(await screen.findByText("alice")).toBeInTheDocument();
+
+    const columns = screen.getAllByRole("heading", { level: 2 });
+    expect(columns.map((column) => column.textContent)).toEqual(["未开始", "不可合并", "评审未通过", "处理中", "可合并"]);
+    expect(screen.getByLabelText("未开始 1 个 PR")).toHaveTextContent("1");
+    expect(screen.getByLabelText("评审未通过 0 个 PR")).toHaveTextContent("0");
+    expect(screen.getByText("暂无 PR")).toBeInTheDocument();
+
+    expect(screen.getByText("未开始").closest("section")).toHaveAttribute("data-column-style", "col-draft");
+    expect(screen.getByText("不可合并").closest("section")).toHaveAttribute("data-column-style", "col-blocked");
+    expect(screen.getByText("评审未通过").closest("section")).toHaveAttribute("data-column-style", "col-changes");
+    expect(screen.getByText("处理中").closest("section")).toHaveAttribute("data-column-style", "col-progress");
+    expect(screen.getByText("可合并").closest("section")).toHaveAttribute("data-column-style", "col-ready");
+
+    const aliceCard = screen.getByTestId("pr-card-101");
+    expect(within(aliceCard).getByText("#101")).toBeInTheDocument();
+    expect(within(aliceCard).getByText("alice")).toBeInTheDocument();
+    expect(within(aliceCard).getByText("内部")).toBeInTheDocument();
+    expect(within(aliceCard).getByText("Draft")).toBeInTheDocument();
+    expect(within(aliceCard).queryByText("PR #101")).toBeNull();
+    expect(within(aliceCard).queryByText(/更新于|本次刷新/)).toBeNull();
   });
 
   it("filters cards by contributor type without navigation", async () => {
@@ -145,20 +175,20 @@ describe("HomePage", () => {
 
     render(<HomePage />);
 
-    expect(await screen.findByText("@alice")).toBeInTheDocument();
-    expect(screen.getByText("@bob")).toBeInTheDocument();
+    expect(await screen.findByText("alice")).toBeInTheDocument();
+    expect(screen.getByText("bob")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "外部" }));
 
-    expect(screen.queryByText("@alice")).not.toBeInTheDocument();
-    expect(screen.getByText("@bob")).toBeInTheDocument();
-    expect(screen.getByText("@dora")).toBeInTheDocument();
+    expect(screen.queryByText("alice")).not.toBeInTheDocument();
+    expect(screen.getByText("bob")).toBeInTheDocument();
+    expect(screen.getByText("dora")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "内部" }));
 
-    expect(screen.getByText("@alice")).toBeInTheDocument();
-    expect(screen.getByText("@carol")).toBeInTheDocument();
-    expect(screen.queryByText("@bob")).not.toBeInTheDocument();
+    expect(screen.getByText("alice")).toBeInTheDocument();
+    expect(screen.getByText("carol")).toBeInTheDocument();
+    expect(screen.queryByText("bob")).not.toBeInTheDocument();
   });
 
   it("triggers another detailed request when refresh now is clicked", async () => {
@@ -168,7 +198,7 @@ describe("HomePage", () => {
 
     render(<HomePage />);
 
-    expect(await screen.findByText("@alice")).toBeInTheDocument();
+    expect(await screen.findByText("alice")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "刷新" }));
 
     await waitFor(() => {
@@ -213,7 +243,7 @@ describe("HomePage", () => {
     expect(signals[1].aborted).toBe(false);
 
     secondResponse.resolve(jsonResponse(boardResponse));
-    expect(await screen.findByText("@alice")).toBeInTheDocument();
+    expect(await screen.findByText("alice")).toBeInTheDocument();
   });
 
   it("shows API error details when the kanban endpoint fails", async () => {

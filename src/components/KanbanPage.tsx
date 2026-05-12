@@ -198,8 +198,8 @@ export function KanbanPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1600px] px-6 py-6" data-testid="kanban-shell">
-        <KanbanBoard columns={visibleColumns} isLoading={isLoading && !board} refreshedAt={board?.refreshedAt} />
+      <main className="mx-auto max-w-[1600px] px-6 pb-10 pt-5 max-[768px]:px-4 max-[768px]:pb-8 max-[768px]:pt-3" data-testid="kanban-shell">
+        <KanbanBoard columns={visibleColumns} isLoading={isLoading && !board} />
       </main>
     </div>
   );
