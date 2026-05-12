@@ -162,6 +162,90 @@ describe("GET /api/kanban", () => {
     await expect(firstResponse.json()).resolves.not.toEqual(await handler(request).then((response) => response.json()));
   });
 
+  it("repopulates the data cache on production refresh requests", async () => {
+    vi.resetModules();
+
+    const responses = [
+      { repository: "o/r", columns: [], refreshedAt: "initial" },
+      { repository: "o/r", columns: [], refreshedAt: "refreshed" },
+    ];
+    let responseIndex = 0;
+    const buildKanbanResponse = vi.fn().mockImplementation(async () => responses[responseIndex++]);
+
+    vi.doMock("next/cache", () => {
+      const cacheEntries = new Map<string, unknown>();
+      const tagEntries = new Map<string, Set<string>>();
+
+      return {
+        unstable_cache: (fn: (cacheScope: string) => Promise<unknown>, keyParts: string[], options?: { tags?: string[] }) => {
+          return async (cacheScope: string) => {
+            const cacheKey = `${keyParts.join(":")}:${cacheScope}`;
+            if (cacheEntries.has(cacheKey)) {
+              return cacheEntries.get(cacheKey);
+            }
+
+            const value = await fn(cacheScope);
+            cacheEntries.set(cacheKey, value);
+
+            for (const tag of options?.tags ?? []) {
+              const keys = tagEntries.get(tag) ?? new Set<string>();
+              keys.add(cacheKey);
+              tagEntries.set(tag, keys);
+            }
+
+            return value;
+          };
+        },
+        revalidateTag: (tag: string) => {
+          for (const key of tagEntries.get(tag) ?? []) {
+            cacheEntries.delete(key);
+          }
+        },
+      };
+    });
+
+    vi.doMock("@/src/config", () => ({
+      ConfigError: class ConfigError extends Error {},
+      getServerConfig: () => ({
+        githubAppId: "1",
+        githubAppInstallationId: "2",
+        githubAppPrivateKeyBase64: "a2V5",
+        githubOwner: "o",
+        githubRepo: "r",
+        githubOrg: "org",
+        githubRequestConcurrency: 1,
+      }),
+    }));
+    vi.doMock("@/src/github/app-auth", () => ({
+      GitHubAppAuth: class {
+        getInstallationToken() {
+          return Promise.resolve("token");
+        }
+      },
+    }));
+    vi.doMock("@/src/github/client", () => ({
+      GitHubApiError: class GitHubApiError extends Error {},
+      GitHubRestClient: class {},
+    }));
+    vi.doMock("@/src/kanban/build-board", () => ({
+      buildKanbanResponse,
+      buildKanbanSummaryResponse: vi.fn(),
+    }));
+
+    const { createKanbanHandler: createProductionHandler } = await import("./handler");
+    const handler = createProductionHandler();
+
+    const firstResponse = await handler(request);
+    const refreshResponse = await handler(refreshRequest);
+    const cachedAfterRefreshResponse = await handler(request);
+
+    await expect(firstResponse.json()).resolves.toEqual(responses[0]);
+    expect(refreshResponse.headers.get("Cache-Control")).toBe("no-store");
+    await expect(refreshResponse.json()).resolves.toEqual(responses[1]);
+    await expect(cachedAfterRefreshResponse.json()).resolves.toEqual(responses[1]);
+    expect(buildKanbanResponse).toHaveBeenCalledTimes(2);
+  });
+
   it("awaits async client factories", async () => {
     const client = emptyClient();
     const handler = createKanbanHandler({
