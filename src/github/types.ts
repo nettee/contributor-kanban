@@ -10,6 +10,7 @@ export type GitHubPullRequestListItem = {
   updated_at: string;
   created_at: string;
   html_url: string;
+  author_association?: string;
   user: GitHubUser;
   head: {
     sha: string;

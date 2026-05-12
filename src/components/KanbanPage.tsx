@@ -44,7 +44,7 @@ export function KanbanPage() {
   const boardRef = useRef<KanbanResponse | null>(null);
   const requestIdRef = useRef(0);
 
-  const fetchBoard = useCallback(async () => {
+  const fetchBoard = useCallback(async (options: { summary?: boolean } = {}) => {
     const requestId = ++requestIdRef.current;
     const hasExistingBoard = boardRef.current !== null;
 
@@ -57,7 +57,12 @@ export function KanbanPage() {
     }
 
     try {
-      const response = await fetch(`/api/kanban?refreshToken=${Date.now()}`, {
+      const searchParams = new URLSearchParams({ refreshToken: String(Date.now()) });
+      if (options.summary) {
+        searchParams.set("summary", "1");
+      }
+
+      const response = await fetch(`/api/kanban?${searchParams.toString()}`, {
         cache: "no-store",
       });
       const payload = await readJson(response);
@@ -112,7 +117,11 @@ export function KanbanPage() {
 
   useEffect(() => {
     isMountedRef.current = true;
-    void fetchBoard();
+    void fetchBoard({ summary: true }).then(() => {
+      if (isMountedRef.current) {
+        void fetchBoard();
+      }
+    });
 
     return () => {
       isMountedRef.current = false;

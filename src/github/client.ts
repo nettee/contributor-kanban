@@ -13,6 +13,7 @@ import type {
 
 const GITHUB_API_URL = "https://api.github.com";
 const GITHUB_API_VERSION = "2022-11-28";
+const GITHUB_REQUEST_TIMEOUT_MS = 15_000;
 
 type FetchImplementation = typeof fetch;
 
@@ -184,11 +185,36 @@ export class GitHubRestClient {
 
   private requestRaw(path: string, options: RequestOptions & { headers?: Headers } = {}): Promise<Response> {
     return this.queue.enqueue(() =>
-      this.fetchImplementation(`${GITHUB_API_URL}${path}`, {
+      this.fetchWithTimeout(path, {
         method: options.method ?? "GET",
         headers: options.headers ?? this.createHeaders(),
       }),
     );
+  }
+
+  private async fetchWithTimeout(path: string, init: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, GITHUB_REQUEST_TIMEOUT_MS);
+
+    try {
+      return await this.fetchImplementation(`${GITHUB_API_URL}${path}`, {
+        ...init,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new GitHubApiError({
+          status: 504,
+          message: `GitHub API request timed out after ${GITHUB_REQUEST_TIMEOUT_MS}ms: ${path}`,
+        });
+      }
+
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   private createHeaders(): Headers {

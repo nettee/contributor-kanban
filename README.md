@@ -23,7 +23,7 @@ Next.js 单页看板，用于展示 `nexu-io/open-design` 的 open PR 状态。
    GITHUB_REPO=open-design
    GITHUB_ORG=nexu-io
    GITHUB_TOKEN=你的 GitHub token
-   GITHUB_REQUEST_CONCURRENCY=1
+   GITHUB_REQUEST_CONCURRENCY=8
    ```
 
    `GITHUB_TOKEN` 只在服务端使用。`.env` 已被 `.gitignore` 忽略，真实 token 保持在本地。

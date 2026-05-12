@@ -4,6 +4,8 @@ import { GitHubApiError } from "../../../src/github/client";
 import type { KanbanClient } from "../../../src/kanban/build-board";
 import { createKanbanHandler } from "./handler";
 
+const request = new Request("http://localhost/api/kanban");
+
 function emptyClient(): KanbanClient {
   return {
     listOpenPullRequests: vi.fn().mockResolvedValue([]),
@@ -25,7 +27,7 @@ describe("GET /api/kanban", () => {
       },
     });
 
-    const response = await handler();
+    const response = await handler(request);
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
@@ -45,7 +47,7 @@ describe("GET /api/kanban", () => {
       }),
     });
 
-    const response = await handler();
+    const response = await handler(request);
 
     expect(response.status).toBe(502);
     await expect(response.json()).resolves.toEqual({
@@ -61,7 +63,7 @@ describe("GET /api/kanban", () => {
       createClient: emptyClient,
     });
 
-    const response = await handler();
+    const response = await handler(request);
     const body = await response.json();
 
     expect(response.status).toBe(200);

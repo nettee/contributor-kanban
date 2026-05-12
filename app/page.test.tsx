@@ -155,7 +155,7 @@ describe("HomePage", () => {
     expect(screen.queryByText("@bob")).not.toBeInTheDocument();
   });
 
-  it("triggers a second request when refresh now is clicked", async () => {
+  it("triggers another detailed request when refresh now is clicked", async () => {
     fetchMock
       .mockImplementationOnce(() => Promise.resolve(jsonResponse(boardResponse)))
       .mockImplementationOnce(() => Promise.resolve(jsonResponse(boardResponse)));
@@ -166,7 +166,7 @@ describe("HomePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "立即刷新" }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -217,7 +217,7 @@ describe("HomePage", () => {
       await Promise.resolve();
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
 
     unmount();
 
@@ -226,6 +226,6 @@ describe("HomePage", () => {
       await Promise.resolve();
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });

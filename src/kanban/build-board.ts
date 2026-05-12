@@ -36,11 +36,20 @@ type PullRequestDetails = {
 
 export async function buildKanbanResponse(client: KanbanClient, refreshedAt = new Date().toISOString()): Promise<KanbanResponse> {
   const pullRequests = await client.listOpenPullRequests();
-  const cards: PullRequestCard[] = [];
+  const cards = await Promise.all(pullRequests.map((listItem) => buildCard(client, listItem)));
 
-  for (const listItem of pullRequests) {
-    cards.push(await buildCard(client, listItem));
-  }
+  return {
+    refreshedAt,
+    columns: buildColumns(cards),
+  };
+}
+
+export async function buildKanbanSummaryResponse(
+  client: Pick<KanbanClient, "listOpenPullRequests">,
+  refreshedAt = new Date().toISOString(),
+): Promise<KanbanResponse> {
+  const pullRequests = await client.listOpenPullRequests();
+  const cards = pullRequests.map(buildSummaryCard);
 
   return {
     refreshedAt,
@@ -78,6 +87,23 @@ async function buildCard(client: KanbanClient, listItem: GitHubPullRequestListIt
     statuses,
     isInternal: membership.isInternal,
   });
+}
+
+function buildSummaryCard(listItem: GitHubPullRequestListItem): PullRequestCard {
+  return {
+    number: listItem.number,
+    title: listItem.title,
+    url: listItem.html_url,
+    author: { login: listItem.user.login, isInternal: isInternalAssociation(listItem.author_association) },
+    detailStatus: listItem.draft ? "Draft" : "等待详细状态刷新",
+    activityAt: listItem.updated_at,
+    updatedAt: listItem.updated_at,
+    column: listItem.draft ? "A" : "D",
+  };
+}
+
+function isInternalAssociation(authorAssociation: string | undefined): boolean {
+  return authorAssociation === "MEMBER" || authorAssociation === "OWNER" || authorAssociation === "COLLABORATOR";
 }
 
 export function buildPullRequestCard(details: PullRequestDetails): PullRequestCard {
