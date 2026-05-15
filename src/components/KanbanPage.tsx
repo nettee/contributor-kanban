@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FilterControls, type ContributorFilter, REFRESH_OPTIONS } from "@/src/components/FilterControls";
 import { KanbanBoard } from "@/src/components/KanbanBoard";
+import { PageNav } from "@/src/components/PageNav";
 import { RefreshStatus } from "@/src/components/RefreshStatus";
 import { KANBAN_COLUMNS, type ErrorResponse, type KanbanResponse, type PullRequestCard } from "@/src/kanban/types";
 
@@ -182,6 +183,7 @@ export function KanbanPage() {
             </svg>
             <span>{board?.repository ?? "加载仓库…"}</span>
           </div>
+          <PageNav current="kanban" />
 
           <div className="ml-auto flex flex-wrap items-center gap-3">
             <FilterControls
